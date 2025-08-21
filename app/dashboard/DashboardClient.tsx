@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@heroui/card';
 
 import { generateWithFal, type ImageSize } from '@/lib/fal-client';
@@ -8,6 +9,7 @@ import { PROMPT_LIBRARY, type PromptCategory } from '@/lib/prompt-presets';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useSession } from '@/lib/use-firebase-auth';
 import { useCreditsStore } from '@/lib/credits-store';
+import { FirebaseAuthClient } from '@/lib/firebase-auth';
 import { ImageUploadSection } from '@/components/dashboard/ImageUploadSection';
 import { GenerationSettingsPanel } from '@/components/dashboard/GenerationSettingsPanel';
 import { GeneratedGallery } from '@/components/dashboard/GeneratedGallery';
@@ -17,7 +19,8 @@ import { API_CONFIG, CREDITS_CONFIG } from '@/config/app-config';
 type GeneratedItem = { id: string; url: string };
 
 export function DashboardClient() {
-  const { user } = useSession();
+  const router = useRouter();
+  const { user, isLoading } = useSession();
   const { creditInfo, fetchCredits } = useCreditsStore();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
@@ -31,6 +34,13 @@ export function DashboardClient() {
   const [error, setError] = useState<string | null>(null);
   const [loadingSpinners, setLoadingSpinners] = useState<string[]>([]);
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth/sign-in');
+    }
+  }, [user, isLoading, router]);
 
   const canGenerate = useMemo(() => {
     return (
@@ -70,7 +80,9 @@ export function DashboardClient() {
   const loadExistingGenerations = async () => {
     try {
       setIsLoadingExisting(true);
-      const response = await fetch(API_CONFIG.ENDPOINTS.USER_GENERATIONS);
+      const response = await FirebaseAuthClient.authenticatedRequest(
+        API_CONFIG.ENDPOINTS.USER_GENERATIONS
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -148,22 +160,22 @@ export function DashboardClient() {
 
         // Record the generation in the database
         try {
-          const response = await fetch(API_CONFIG.ENDPOINTS.RECORD_GENERATION, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              prompt: promptToUse,
-              category,
-              numImages: CREDITS_CONFIG.DEFAULT_NUM_IMAGES,
-              imageUrls: [result.images[0].url],
-              imageSize: imageSize,
-              style: 'REALISTIC',
-              renderingSpeed: CREDITS_CONFIG.DEFAULT_RENDERING_SPEED,
-              falRequestId: result.requestId,
-            }),
-          });
+          const response = await FirebaseAuthClient.authenticatedRequest(
+            API_CONFIG.ENDPOINTS.RECORD_GENERATION,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                prompt: promptToUse,
+                category,
+                numImages: CREDITS_CONFIG.DEFAULT_NUM_IMAGES,
+                imageUrls: [result.images[0].url],
+                imageSize: imageSize,
+                style: 'REALISTIC',
+                renderingSpeed: CREDITS_CONFIG.DEFAULT_RENDERING_SPEED,
+                falRequestId: result.requestId,
+              }),
+            }
+          );
 
           if (response.ok) {
             // Refresh credits from server to get accurate breakdown
@@ -193,6 +205,23 @@ export function DashboardClient() {
       setLoadingSpinners([]); // Clear loading spinners on error too
     }
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-default-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <ErrorBoundary>
