@@ -6,7 +6,7 @@ import { getTotalAvailableCredits } from '@/lib/credits';
 
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
+    const session = await auth.api.getSession({ headers: headers() });
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

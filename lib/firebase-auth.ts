@@ -120,6 +120,40 @@ export class FirebaseAuthClient {
     return auth.currentUser;
   }
 
+  // Get current user's ID token for API requests
+  static async getIdToken(): Promise<string | null> {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        return await user.getIdToken();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting ID token:', error);
+      return null;
+    }
+  }
+
+  // Make authenticated API request
+  static async authenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const token = await this.getIdToken();
+    
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    };
+
+    return fetch(url, {
+      ...options,
+      headers,
+    });
+  }
+
   // Listen to auth state changes
   static onAuthStateChange(callback: (user: FirebaseUser | null) => void) {
     return onAuthStateChanged(auth, callback);

@@ -1,30 +1,42 @@
-import prisma from '@/lib/prisma';
-import { CREDITS_CONFIG } from '@/config/app-config';
+import { doc, getDoc, updateDoc, increment, collection, addDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
+import { User, Generation, Purchase, COLLECTIONS } from '@/types/firebase';
+
+// Credits configuration
+const CREDITS_CONFIG = {
+  FREE_CREDITS_PER_USER: 1,
+};
 
 export async function getUserCredits(userId: string): Promise<number> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { availableCredits: true },
-  });
-
-  return user?.availableCredits || 0;
+  try {
+    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as User;
+      return userData.availableCredits || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error getting user credits:', error);
+    return 0;
+  }
 }
 
 /**
  * Get available free credits for a user
  */
 export async function getUserFreeCredits(userId: string): Promise<number> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { freeCreditsUsed: true },
-  });
+  try {
+    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+    if (!userDoc.exists()) return 0;
 
-  if (!user) return 0;
+    const userData = userDoc.data() as User;
+    const freeCreditsRemaining = CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0);
 
-  const freeCreditsRemaining =
-    CREDITS_CONFIG.FREE_CREDITS_PER_USER - user.freeCreditsUsed;
-
-  return Math.max(0, freeCreditsRemaining);
+    return Math.max(0, freeCreditsRemaining);
+  } catch (error) {
+    console.error('Error getting user free credits:', error);
+    return 0;
+  }
 }
 
 /**
@@ -52,110 +64,81 @@ export async function deductCredits(
   creditsToDeduct: number = 1
 ): Promise<{ success: boolean; usedFreeCredit: boolean }> {
   try {
-    // Use a transaction to prevent race conditions
-    const result = await prisma.$transaction(async tx => {
-      // Get current user data within the transaction
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: {
-          availableCredits: true,
-          freeCreditsUsed: true,
-        },
+    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data() as User;
+    const freeCreditsRemaining = Math.max(
+      0,
+      CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0)
+    );
+    const totalAvailable = (userData.availableCredits || 0) + freeCreditsRemaining;
+
+    if (totalAvailable < creditsToDeduct) {
+      return { success: false, usedFreeCredit: false };
+    }
+
+    let usedFreeCredit = false;
+    let remainingToDeduct = creditsToDeduct;
+
+    // First, try to use free credits
+    if (freeCreditsRemaining > 0 && remainingToDeduct > 0) {
+      const freeCreditsToUse = Math.min(freeCreditsRemaining, remainingToDeduct);
+
+      await updateDoc(userRef, {
+        freeCreditsUsed: increment(freeCreditsToUse),
+        updatedAt: new Date(),
       });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
+      remainingToDeduct -= freeCreditsToUse;
+      usedFreeCredit = true;
+    }
 
-      // Calculate available credits within transaction
-      const freeCreditsRemaining = Math.max(
-        0,
-        CREDITS_CONFIG.FREE_CREDITS_PER_USER - user.freeCreditsUsed
+    // Then, use paid credits if needed
+    if (remainingToDeduct > 0) {
+      await updateDoc(userRef, {
+        availableCredits: increment(-remainingToDeduct),
+        updatedAt: new Date(),
+      });
+
+      // Update purchase records (deduct from most recent first)
+      const purchasesQuery = query(
+        collection(db, COLLECTIONS.PURCHASES),
+        where('userId', '==', userId),
+        where('creditsRemaining', '>', 0),
+        where('status', '==', 'COMPLETED'),
+        orderBy('createdAt', 'desc')
       );
-      const totalAvailable = user.availableCredits + freeCreditsRemaining;
 
-      if (totalAvailable < creditsToDeduct) {
-        return { success: false, usedFreeCredit: false };
-      }
+      const purchasesSnapshot = await getDocs(purchasesQuery);
+      let purchaseDeductRemaining = remainingToDeduct;
 
-      let usedFreeCredit = false;
-      let remainingToDeduct = creditsToDeduct;
+      for (const purchaseDoc of purchasesSnapshot.docs) {
+        if (purchaseDeductRemaining <= 0) break;
 
-      // First, try to use free credits
-      if (freeCreditsRemaining > 0 && remainingToDeduct > 0) {
-        const freeCreditsToUse = Math.min(
-          freeCreditsRemaining,
-          remainingToDeduct
+        const purchaseData = purchaseDoc.data() as Purchase;
+        const deductFromThisPurchase = Math.min(
+          purchaseDeductRemaining,
+          purchaseData.creditsRemaining
         );
 
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            freeCreditsUsed: {
-              increment: freeCreditsToUse,
-            },
-          },
+        await updateDoc(doc(db, COLLECTIONS.PURCHASES, purchaseDoc.id), {
+          creditsUsed: increment(deductFromThisPurchase),
+          creditsRemaining: increment(-deductFromThisPurchase),
+          updatedAt: new Date(),
         });
 
-        remainingToDeduct -= freeCreditsToUse;
-        usedFreeCredit = true;
+        purchaseDeductRemaining -= deductFromThisPurchase;
       }
+    }
 
-      // Then, use paid credits if needed
-      if (remainingToDeduct > 0) {
-        // Deduct paid credits from user
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            availableCredits: {
-              decrement: remainingToDeduct,
-            },
-          },
-        });
-
-        // Update purchase records (deduct from most recent first)
-        const purchases = await tx.purchase.findMany({
-          where: {
-            userId,
-            creditsRemaining: { gt: 0 },
-            status: 'COMPLETED',
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        let purchaseDeductRemaining = remainingToDeduct;
-
-        for (const purchase of purchases) {
-          if (purchaseDeductRemaining <= 0) break;
-
-          const deductFromThisPurchase = Math.min(
-            purchaseDeductRemaining,
-            purchase.creditsRemaining
-          );
-
-          await tx.purchase.update({
-            where: { id: purchase.id },
-            data: {
-              creditsUsed: {
-                increment: deductFromThisPurchase,
-              },
-              creditsRemaining: {
-                decrement: deductFromThisPurchase,
-              },
-            },
-          });
-
-          purchaseDeductRemaining -= deductFromThisPurchase;
-        }
-      }
-
-      return { success: true, usedFreeCredit };
-    });
-
-    return result;
+    return { success: true, usedFreeCredit };
   } catch (error) {
     console.error('Error deducting credits:', error);
-
     return { success: false, usedFreeCredit: false };
   }
 }
@@ -186,40 +169,68 @@ export async function recordGeneration({
   usedFreeCredit?: boolean;
 }) {
   try {
-    const generation = await prisma.generation.create({
-      data: {
-        userId,
-        prompt,
-        category,
-        numImages,
-        imageUrls,
-        imageSize,
-        style,
-        renderingSpeed,
-        falRequestId,
-        creditsUsed,
-        usedFreeCredit,
-      },
-    });
+    const generationData: Omit<Generation, 'id'> = {
+      userId,
+      prompt,
+      category,
+      numImages,
+      imageUrls,
+      imageSize,
+      style,
+      renderingSpeed,
+      falRequestId,
+      creditsUsed,
+      usedFreeCredit,
+      createdAt: new Date(),
+    };
 
-    return generation;
+    const docRef = await addDoc(collection(db, COLLECTIONS.GENERATIONS), generationData);
+    
+    return {
+      id: docRef.id,
+      ...generationData,
+    };
   } catch (error) {
     console.error('Error recording generation:', error);
     throw error;
   }
 }
 
-export async function getUserGenerations(userId: string, limit: number = 50) {
-  return prisma.generation.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+export async function getUserGenerations(userId: string, limitCount: number = 50) {
+  try {
+    const generationsQuery = query(
+      collection(db, COLLECTIONS.GENERATIONS),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(generationsQuery);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Generation[];
+  } catch (error) {
+    console.error('Error getting user generations:', error);
+    return [];
+  }
 }
 
 export async function getUserPurchases(userId: string) {
-  return prisma.purchase.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  });
+  try {
+    const purchasesQuery = query(
+      collection(db, COLLECTIONS.PURCHASES),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(purchasesQuery);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Purchase[];
+  } catch (error) {
+    console.error('Error getting user purchases:', error);
+    return [];
+  }
 }
