@@ -1,13 +1,13 @@
 # PictureMe AI
 
-**AI-Powered Professional Headshots** - Generate stunning professional headshots from your photos using cutting-edge AI technology.
+**AI-Powered UGC Video Generation** - Create engaging UGC videos with your avatar speaking and moving naturally using cutting-edge AI technology.
 
 ### Features
 
-- 🖼️ **AI Image Generation** - Transform personal photos into professional headshots using [FAL.AI](https://fal.ai)
-- 🆓 **Free Trial** - New users get 1 free image generation (no credit card required)
+- 🎬 **AI Video Generation** - Transform personal photos into realistic UGC videos with your avatar
+- 🆓 **Free Trial** - New users get 1 free video generation (no credit card required)
 - 💳 **Credit-Based System** - Pay-per-use model with two convenient packages
-- 🎨 **Multiple Styles** - Choose from Auto, Realistic, or Fiction styles
+- 🎨 **Multi-Step Configuration** - Customize templates, audio, movements, and backgrounds
 - 🔐 **Secure Authentication** - Google OAuth and email/password with Better Auth
 - 💰 **Stripe Integration** - Secure payment processing
 
@@ -18,7 +18,7 @@
 - **Styling**: [Tailwind CSS](https://tailwindcss.com)
 - **Database**: PostgreSQL with [Prisma ORM](https://prisma.io)
 - **Authentication**: [Better Auth](https://better-auth.com)
-- **AI Generation**: [FAL.AI](https://fal.ai) (Ideogram Character model)
+- **AI Generation**: [FAL.AI](https://fal.ai) (Video generation models)
 - **Payments**: [Stripe](https://stripe.com)
 - **Email**: [ZeptoMail](https://zeptomail.com)
 - **Hosting**: [Supabase](https://supabase.com) (Database) You can host anywhere with Postgres

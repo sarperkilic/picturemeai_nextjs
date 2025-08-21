@@ -33,7 +33,7 @@ export function AuthSignUpForm({ className, ...props }: AuthSignUpFormProps) {
       setError(null);
 
       await signInWithGoogle();
-      
+
       // Redirect after successful sign up
       if (inviteToken) {
         window.location.href = `/invite/${inviteToken}`;
@@ -58,12 +58,14 @@ export function AuthSignUpForm({ className, ...props }: AuthSignUpFormProps) {
     if (!firstName || !lastName || !email || !password) {
       setError('All fields are required.');
       setIsLoading(false);
+
       return;
     }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       setIsLoading(false);
+
       return;
     }
 

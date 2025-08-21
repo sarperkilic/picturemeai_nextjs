@@ -1,5 +1,5 @@
-import { DashboardClient } from './DashboardClient';
+import { UGCDashboardClient } from './UGCDashboardClient';
 
 export default function DashboardPage() {
-  return <DashboardClient />;
+  return <UGCDashboardClient />;
 }

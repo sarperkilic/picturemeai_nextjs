@@ -35,11 +35,13 @@ export class IyzicoClient {
   }
 
   // Create payment form
-  async createPaymentForm(request: IyzicoPaymentRequest): Promise<IyzicoPaymentResponse> {
+  async createPaymentForm(
+    request: IyzicoPaymentRequest
+  ): Promise<IyzicoPaymentResponse> {
     try {
       // This is a placeholder implementation
       // You'll need to implement the actual iyzico API call here
-      
+
       const paymentData = {
         locale: 'tr',
         conversationId: `payment_${Date.now()}`,
@@ -63,42 +65,48 @@ export class IyzicoClient {
           ip: '85.34.78.112',
           city: 'Istanbul',
           country: 'Turkey',
-          zipCode: '34732'
+          zipCode: '34732',
         },
         shippingAddress: {
           contactName: request.userName,
           city: 'Istanbul',
           country: 'Turkey',
           address: 'Test Address',
-          zipCode: '34732'
+          zipCode: '34732',
         },
         billingAddress: {
           contactName: request.userName,
           city: 'Istanbul',
           country: 'Turkey',
           address: 'Test Address',
-          zipCode: '34732'
+          zipCode: '34732',
         },
         basketItems: [
           {
             id: request.priceId,
-            name: request.priceId === 'starter' ? 'Starter Package' : 'Creator Package',
+            name:
+              request.priceId === 'starter'
+                ? 'Starter Package'
+                : 'Creator Package',
             category1: 'Credits',
             itemType: 'VIRTUAL',
-            price: request.amount / 100
-          }
-        ]
+            price: request.amount / 100,
+          },
+        ],
       };
 
       // Make API call to iyzico
-      const response = await fetch(`${this.config.baseUrl}/payment/iyzipos/checkoutform/initialize/ecom`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${this.config.apiKey}:${this.config.secretKey}`).toString('base64')}`
-        },
-        body: JSON.stringify(paymentData)
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/payment/iyzipos/checkoutform/initialize/ecom`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${Buffer.from(`${this.config.apiKey}:${this.config.secretKey}`).toString('base64')}`,
+          },
+          body: JSON.stringify(paymentData),
+        }
+      );
 
       const result = await response.json();
 
@@ -106,58 +114,63 @@ export class IyzicoClient {
         return {
           status: 'success',
           paymentPageUrl: result.paymentPageUrl,
-          token: result.token
+          token: result.token,
         };
       } else {
         return {
           status: 'error',
           errorCode: result.errorCode,
-          errorMessage: result.errorMessage
+          errorMessage: result.errorMessage,
         };
       }
     } catch (error) {
       return {
         status: 'error',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   // Verify payment callback
-  async verifyPayment(token: string): Promise<{ status: string; paymentId?: string; error?: string }> {
+  async verifyPayment(
+    token: string
+  ): Promise<{ status: string; paymentId?: string; error?: string }> {
     try {
       const verifyData = {
         locale: 'tr',
         conversationId: `verify_${Date.now()}`,
-        token: token
+        token: token,
       };
 
-      const response = await fetch(`${this.config.baseUrl}/payment/iyzipos/checkoutform/auth/ecom/detail`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${this.config.apiKey}:${this.config.secretKey}`).toString('base64')}`
-        },
-        body: JSON.stringify(verifyData)
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/payment/iyzipos/checkoutform/auth/ecom/detail`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${Buffer.from(`${this.config.apiKey}:${this.config.secretKey}`).toString('base64')}`,
+          },
+          body: JSON.stringify(verifyData),
+        }
+      );
 
       const result = await response.json();
 
       if (result.status === 'success' && result.paymentStatus === 'SUCCESS') {
         return {
           status: 'success',
-          paymentId: result.paymentId
+          paymentId: result.paymentId,
         };
       } else {
         return {
           status: 'error',
-          error: result.errorMessage || 'Payment verification failed'
+          error: result.errorMessage || 'Payment verification failed',
         };
       }
     } catch (error) {
       return {
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -167,7 +180,8 @@ export class IyzicoClient {
 export const iyzicoClient = new IyzicoClient({
   apiKey: process.env.IYZICO_API_KEY || '',
   secretKey: process.env.IYZICO_SECRET_KEY || '',
-  baseUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://api.iyzipay.com' 
-    : 'https://sandbox-api.iyzipay.com'
-}); 
+  baseUrl:
+    process.env.NODE_ENV === 'production'
+      ? 'https://api.iyzipay.com'
+      : 'https://sandbox-api.iyzipay.com',
+});

@@ -29,12 +29,14 @@ export function ForgotPasswordForm({
     if (!email) {
       setError('Email is required.');
       setIsLoading(false);
+
       return;
     }
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
       setIsLoading(false);
+
       return;
     }
 

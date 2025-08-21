@@ -38,7 +38,7 @@ export function Features() {
           viewport={{ once: true }}
           whileInView='visible'
         >
-          Why choose PictureMe AI
+          Why choose PictureMe AI for UGC Videos
         </motion.h2>
 
         <motion.div
@@ -54,13 +54,13 @@ export function Features() {
               <CardHeader className='pb-4'>
                 <div className='flex items-center gap-3'>
                   <div className='w-3 h-3 bg-primary rounded-full' />
-                  <h3 className='text-xl font-semibold'>High Consistency</h3>
+                  <h3 className='text-xl font-semibold'>Realistic UGC Videos</h3>
                 </div>
               </CardHeader>
               <CardBody className='pt-0'>
                 <p className='text-default-600 mb-6'>
-                  Your identity stays perfectly intact across every style and
-                  scene. Same face, unlimited possibilities.
+                  Create authentic UGC videos with your avatar speaking, moving,
+                  and interacting naturally. Perfect for social media content.
                 </p>
 
                 {/* Consistency showcase grid */}
@@ -127,23 +127,22 @@ export function Features() {
             </Card>
           </motion.div>
 
-          {/* Studio Quality */}
+          {/* Multi-Step Configuration */}
           <motion.div className='lg:col-span-2' variants={fadeUp}>
             <Card className='bg-content1/60 border border-default-100 h-full p-6'>
               <CardHeader className='pb-4'>
                 <div className='flex items-center gap-3'>
                   <div className='w-3 h-3 bg-secondary rounded-full' />
-                  <h3 className='text-xl font-semibold'>Studio Quality</h3>
+                  <h3 className='text-xl font-semibold'>Multi-Step Configuration</h3>
                 </div>
               </CardHeader>
               <CardBody className='pt-0'>
                 <p className='text-default-600 mb-4'>
-                  Professional-grade results with crisp lighting, clean
-                  compositions, and natural skin tones that rival expensive
-                  photo shoots.
+                  Customize every aspect of your UGC video with our intuitive
+                  step-by-step configuration process.
                 </p>
                 <div className='flex gap-2'>
-                  {['HDR Lighting', 'Pro Retouching'].map(feature => (
+                  {['Template Selection', 'Character Setup', 'Audio Script', 'Background'].map(feature => (
                     <div
                       key={feature}
                       className='px-3 py-1 bg-default-100 rounded-full text-xs font-medium'
@@ -167,10 +166,10 @@ export function Features() {
               </CardHeader>
               <CardBody className='pt-0'>
                 <p className='text-default-600 text-sm mb-4'>
-                  Generate dozens of professional looks in seconds, not hours.
+                  Create professional UGC videos in minutes, not hours.
                 </p>
-                <div className='text-2xl font-bold text-primary'>~30s</div>
-                <div className='text-xs text-default-500'>per generation</div>
+                <div className='text-2xl font-bold text-primary'>~2min</div>
+                <div className='text-xs text-default-500'>per video</div>
               </CardBody>
             </Card>
           </motion.div>
@@ -186,9 +185,9 @@ export function Features() {
               </CardHeader>
               <CardBody className='pt-0'>
                 <p className='text-default-600 text-sm mb-4'>
-                  Just upload one photo and let AI do the magic.
+                  Just upload one photo and configure your video settings.
                 </p>
-                <div className='text-2xl font-bold text-primary'>3</div>
+                <div className='text-2xl font-bold text-primary'>6</div>
                 <div className='text-xs text-default-500'>simple steps</div>
               </CardBody>
             </Card>

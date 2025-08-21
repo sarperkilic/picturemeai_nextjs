@@ -30,7 +30,7 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
       setIsLoading(true);
       setError(null);
       await signInWithGoogle();
-      
+
       // Redirect after successful sign in
       if (inviteToken) {
         router.push(`/invite/${inviteToken}`);
@@ -54,12 +54,13 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
     if (!email || !password) {
       setError('Email and password are required.');
       setIsLoading(false);
+
       return;
     }
 
     try {
       await signIn(email, password);
-      
+
       // Redirect after successful sign in
       if (inviteToken) {
         router.push(`/invite/${inviteToken}`);
@@ -70,6 +71,7 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
       }
     } catch (err: any) {
       const errorMessage = err?.message || 'Sign in failed';
+
       setError(errorMessage);
       console.error('Firebase sign-in error:', err);
     } finally {

@@ -26,21 +26,21 @@ export function HowItWorks() {
       step: 1,
       title: 'Upload one photo',
       description:
-        "Any clear portrait works great. Selfie, headshot, or professional photo - we'll handle the rest.",
+        "Any clear portrait works great. Selfie, headshot, or professional photo - we'll create your avatar.",
       icon: '📷',
     },
     {
       step: 2,
-      title: 'Choose your style',
+      title: 'Configure your video',
       description:
-        'Pick from professional, creative, lifestyle themes and let our AI understand your vision.',
-      icon: '🎨',
+        'Choose templates, add audio scripts, set movements, and customize every aspect of your UGC video.',
+      icon: '🎬',
     },
     {
       step: 3,
       title: 'Generate & download',
       description:
-        'Get a consistent gallery of professional images in seconds. Your face, unlimited possibilities.',
+        'Create engaging UGC videos with your avatar speaking and moving naturally in minutes.',
       icon: '✨',
     },
   ];
@@ -71,7 +71,7 @@ export function HowItWorks() {
           viewport={{ once: true }}
           whileInView='visible'
         >
-          Transform yourself in three simple steps
+          Create UGC videos in three simple steps
         </motion.p>
 
         {/* Steps section - Top */}

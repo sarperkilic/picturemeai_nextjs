@@ -47,7 +47,7 @@ export function Hero() {
             variants={fadeUp}
           >
             <h1 className={title({ size: 'lg' })}>
-              Your face. Infinite looks.
+              Create UGC Videos.
               <br />
               <span className={title({ color: 'violet', size: 'lg' })}>
                 From one photo.
@@ -57,15 +57,15 @@ export function Hero() {
               className={subtitle({ class: 'mt-2 md:w-3/4 max-w-full' })}
               variants={fadeUp}
             >
-              Upload a single photo and get a consistent gallery of you across
-              styles, outfits, and settings in seconds.
+              Upload a single photo and create engaging UGC videos with your avatar
+              speaking, moving, and interacting in any setting.
             </motion.p>
             <motion.div
               className='flex items-center gap-2 mt-1'
               variants={fadeUp}
             >
               <span className='text-success text-sm font-medium'>
-                ✨ 1 free image generation
+                ✨ 1 free video generation
               </span>
               <span className='text-default-500 text-sm'>
                 • No credit card required
@@ -99,10 +99,10 @@ export function Hero() {
                 variant='bordered'
               >
                 <span className='block sm:hidden'>
-                  No training wait. Just upload & generate.
+                  No training wait. Just upload & create videos.
                 </span>
                 <span className='hidden sm:block'>
-                  No training wait. No complexity. Just upload and generate.
+                  No training wait. No complexity. Just upload and create videos.
                 </span>
               </Snippet>
             </motion.div>

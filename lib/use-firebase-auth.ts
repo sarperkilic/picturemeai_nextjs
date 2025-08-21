@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
-import { FirebaseAuthClient } from './firebase-auth';
+
 import { User } from '@/types/firebase';
+
+import { FirebaseAuthClient } from './firebase-auth';
 
 export interface Session {
   user: User | null;
@@ -17,31 +19,39 @@ export function useSession(): Session {
   });
 
   useEffect(() => {
-    const unsubscribe = FirebaseAuthClient.onAuthStateChange(async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        try {
-          // Get user data from Firestore
-          const userData = await FirebaseAuthClient.getUserData(firebaseUser.uid);
-          setSession({
-            user: userData,
-            isLoading: false,
-            error: null,
-          });
-        } catch (error) {
+    const unsubscribe = FirebaseAuthClient.onAuthStateChange(
+      async (firebaseUser: FirebaseUser | null) => {
+        if (firebaseUser) {
+          try {
+            // Get user data from Firestore
+            const userData = await FirebaseAuthClient.getUserData(
+              firebaseUser.uid
+            );
+
+            setSession({
+              user: userData,
+              isLoading: false,
+              error: null,
+            });
+          } catch (error) {
+            setSession({
+              user: null,
+              isLoading: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Failed to load user data',
+            });
+          }
+        } else {
           setSession({
             user: null,
             isLoading: false,
-            error: error instanceof Error ? error.message : 'Failed to load user data',
+            error: null,
           });
         }
-      } else {
-        setSession({
-          user: null,
-          isLoading: false,
-          error: null,
-        });
       }
-    });
+    );
 
     return () => unsubscribe();
   }, []);
@@ -51,7 +61,7 @@ export function useSession(): Session {
 
 export function useAuth() {
   const session = useSession();
-  
+
   const signIn = async (email: string, password: string) => {
     try {
       await FirebaseAuthClient.signIn(email, password);
@@ -109,4 +119,4 @@ export function useAuth() {
     sendPasswordReset,
     sendEmailVerification,
   };
-} 
+}

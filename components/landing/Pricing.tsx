@@ -30,12 +30,13 @@ export function Pricing() {
   const handlePurchase = async (plan: 'STARTER' | 'CREATOR') => {
     if (!user) {
       router.push('/auth/sign-in');
+
       return;
     }
-    
+
     // Temporarily disabled - iyzico integration pending
     setError('Payment system is being updated. Please check back soon!');
-    
+
     // TODO: Implement iyzico payment integration
     // try {
     //   setLoadingPlan(plan);
@@ -112,16 +113,16 @@ export function Pricing() {
                         <span className='text-primary'>✓</span>
                         <span>
                           {CREDITS_CONFIG.PACKAGES.STARTER.credits} high-quality
-                          images
+                          videos
                         </span>
                       </li>
                       <li className='flex items-center gap-2'>
                         <span className='text-primary'>✓</span>
-                        <span>High consistency model</span>
+                        <span>Realistic avatar generation</span>
                       </li>
                       <li className='flex items-center gap-2'>
                         <span className='text-primary'>✓</span>
-                        <span>All style categories</span>
+                        <span>All video templates</span>
                       </li>
                       <li className='flex items-center gap-2'>
                         <span className='text-primary'>✓</span>
@@ -193,7 +194,7 @@ export function Pricing() {
                         <span className='text-primary'>✓</span>
                         <span className='font-medium'>
                           {CREDITS_CONFIG.PACKAGES.CREATOR.credits} high-quality
-                          images
+                          videos
                         </span>
                       </li>
                       <li className='flex items-center gap-2'>

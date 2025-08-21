@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+
 import { FirebaseAuthClient } from './firebase-auth';
 
 interface CreditInfo {
@@ -85,7 +86,8 @@ export const useCreditsStore = create<CreditsStore>(set => ({
 
   fetchCredits: async () => {
     try {
-      const response = await FirebaseAuthClient.authenticatedRequest('/api/user/credits');
+      const response =
+        await FirebaseAuthClient.authenticatedRequest('/api/user/credits');
 
       if (response.ok) {
         const data = await response.json();

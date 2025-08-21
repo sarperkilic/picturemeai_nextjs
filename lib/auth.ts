@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
-import { headers } from 'next/headers';
+
+import { User } from '@/types/firebase';
+
 import { FirebaseAuthClient } from './firebase-auth';
 import { adminAuth } from './firebase-admin';
-import { User } from '@/types/firebase';
 
 // Server-side session interface
 export interface ServerSession {
@@ -82,9 +83,14 @@ export const auth = {
   // Server-side methods
   api: {
     // Get session from request headers (for API routes)
-    getSession: async ({ headers: requestHeaders }: { headers: Promise<Headers> | Headers | (() => Promise<Headers> | Headers) }): Promise<ServerSession | null> => {
+    getSession: async ({
+      headers: requestHeaders,
+    }: {
+      headers: Promise<Headers> | Headers | (() => Promise<Headers> | Headers);
+    }): Promise<ServerSession | null> => {
       try {
         let headersList: Headers;
+
         if (typeof requestHeaders === 'function') {
           headersList = await requestHeaders();
         } else if (requestHeaders instanceof Promise) {
@@ -99,17 +105,17 @@ export const auth = {
         }
 
         const token = authorization.substring(7);
-        
+
         // Verify the token with Firebase Admin
         const decodedToken = await adminAuth.verifyIdToken(token);
-        
+
         if (!decodedToken.uid) {
           return null;
         }
 
         // Get user data from Firestore
         const userData = await FirebaseAuthClient.getUserData(decodedToken.uid);
-        
+
         if (!userData) {
           return null;
         }
@@ -120,12 +126,15 @@ export const auth = {
         };
       } catch (error) {
         console.error('Error verifying session:', error);
+
         return null;
       }
     },
 
     // Get session from NextRequest (alternative method)
-    getSessionFromRequest: async (request: NextRequest): Promise<ServerSession | null> => {
+    getSessionFromRequest: async (
+      request: NextRequest
+    ): Promise<ServerSession | null> => {
       try {
         const authorization = request.headers.get('authorization');
 
@@ -134,17 +143,17 @@ export const auth = {
         }
 
         const token = authorization.substring(7);
-        
+
         // Verify the token with Firebase Admin
         const decodedToken = await adminAuth.verifyIdToken(token);
-        
+
         if (!decodedToken.uid) {
           return null;
         }
 
         // Get user data from Firestore
         const userData = await FirebaseAuthClient.getUserData(decodedToken.uid);
-        
+
         if (!userData) {
           return null;
         }
@@ -155,6 +164,7 @@ export const auth = {
         };
       } catch (error) {
         console.error('Error verifying session:', error);
+
         return null;
       }
     },
@@ -162,4 +172,4 @@ export const auth = {
 };
 
 // Export the auth object as default
-export default auth; 
+export default auth;

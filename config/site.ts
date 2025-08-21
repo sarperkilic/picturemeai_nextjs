@@ -3,7 +3,7 @@ export type SiteConfig = typeof siteConfig;
 export const siteConfig = {
   name: 'PictureMe AI',
   description:
-    'Upload one photo, get dozens of studio‑quality shots of yourself in any setting — fast, consistent, and private.',
+    'Upload one photo, create engaging UGC videos with your avatar speaking and moving naturally — fast, consistent, and private.',
   navItems: [
     {
       label: 'Features',

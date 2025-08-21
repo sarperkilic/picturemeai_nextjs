@@ -8,8 +8,6 @@ import { Input } from '@heroui/input';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 
-import { useAuth } from '@/lib/use-firebase-auth';
-
 interface ResetPasswordFormProps extends React.ComponentProps<'div'> {}
 
 export function ResetPasswordForm({
@@ -48,18 +46,21 @@ export function ResetPasswordForm({
     if (!password || !confirmPassword) {
       setError('Both password fields are required.');
       setIsLoading(false);
+
       return;
     }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       setIsLoading(false);
+
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       setIsLoading(false);
+
       return;
     }
 

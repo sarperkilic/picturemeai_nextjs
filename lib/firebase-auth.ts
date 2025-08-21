@@ -1,5 +1,5 @@
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
@@ -7,19 +7,26 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   User as FirebaseUser,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+
 import { User } from '@/types/firebase';
 import { COLLECTIONS } from '@/types/firebase';
+
+import { auth, db } from './firebase';
 
 // Firebase Auth Client
 export class FirebaseAuthClient {
   // Sign in with email and password
   static async signIn(email: string, password: string) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       return userCredential.user;
     } catch (error) {
       throw error;
@@ -29,7 +36,11 @@ export class FirebaseAuthClient {
   // Sign up with email and password
   static async signUp(email: string, password: string, name: string) {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // Create user document in Firestore
@@ -63,7 +74,7 @@ export class FirebaseAuthClient {
 
       // Check if user document exists, if not create it
       const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid));
-      
+
       if (!userDoc.exists()) {
         const userData: Omit<User, 'id'> = {
           name: user.displayName || 'User',
@@ -107,6 +118,7 @@ export class FirebaseAuthClient {
   static async sendEmailVerification() {
     try {
       const user = auth.currentUser;
+
       if (user) {
         await sendEmailVerification(user);
       }
@@ -124,27 +136,33 @@ export class FirebaseAuthClient {
   static async getIdToken(): Promise<string | null> {
     try {
       const user = auth.currentUser;
+
       if (user) {
         return await user.getIdToken();
       }
+
       return null;
     } catch (error) {
       console.error('Error getting ID token:', error);
+
       return null;
     }
   }
 
   // Make authenticated API request
-  static async authenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+  static async authenticatedRequest(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
     const token = await this.getIdToken();
-    
+
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       ...options.headers,
     };
 
@@ -163,6 +181,7 @@ export class FirebaseAuthClient {
   static async updateUserProfile(uid: string, data: Partial<User>) {
     try {
       const userRef = doc(db, COLLECTIONS.USERS, uid);
+
       await updateDoc(userRef, {
         ...data,
         updatedAt: new Date(),
@@ -176,12 +195,14 @@ export class FirebaseAuthClient {
   static async getUserData(uid: string): Promise<User | null> {
     try {
       const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+
       if (userDoc.exists()) {
         return { id: userDoc.id, ...userDoc.data() } as User;
       }
+
       return null;
     } catch (error) {
       throw error;
     }
   }
-} 
+}

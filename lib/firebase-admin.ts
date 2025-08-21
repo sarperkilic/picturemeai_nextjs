@@ -11,10 +11,11 @@ const firebaseAdminConfig = {
 };
 
 // Initialize Firebase Admin
-const app = getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
+const app =
+  getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
 
 // Initialize Firebase Admin services
 export const adminAuth = getAuth(app);
 export const adminDb = getFirestore(app);
 
-export default app; 
+export default app;

@@ -10,3 +10,4 @@ export { SearchIcon } from './SearchIcon';
 export { GoogleIcon } from './GoogleIcon';
 export { ZoomIcon } from './ZoomIcon';
 export { RefreshIcon } from './RefreshIcon';
+export { CheckIcon } from './CheckIcon';

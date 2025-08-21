@@ -1,6 +1,20 @@
-import { doc, getDoc, updateDoc, increment, collection, addDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  increment,
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+} from 'firebase/firestore';
+
 import { User, Generation, Purchase, COLLECTIONS } from '@/types/firebase';
+
+import { db } from './firebase';
 
 // Credits configuration
 const CREDITS_CONFIG = {
@@ -10,13 +24,17 @@ const CREDITS_CONFIG = {
 export async function getUserCredits(userId: string): Promise<number> {
   try {
     const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+
     if (userDoc.exists()) {
       const userData = userDoc.data() as User;
+
       return userData.availableCredits || 0;
     }
+
     return 0;
   } catch (error) {
     console.error('Error getting user credits:', error);
+
     return 0;
   }
 }
@@ -27,14 +45,17 @@ export async function getUserCredits(userId: string): Promise<number> {
 export async function getUserFreeCredits(userId: string): Promise<number> {
   try {
     const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+
     if (!userDoc.exists()) return 0;
 
     const userData = userDoc.data() as User;
-    const freeCreditsRemaining = CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0);
+    const freeCreditsRemaining =
+      CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0);
 
     return Math.max(0, freeCreditsRemaining);
   } catch (error) {
     console.error('Error getting user free credits:', error);
+
     return 0;
   }
 }
@@ -76,7 +97,8 @@ export async function deductCredits(
       0,
       CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0)
     );
-    const totalAvailable = (userData.availableCredits || 0) + freeCreditsRemaining;
+    const totalAvailable =
+      (userData.availableCredits || 0) + freeCreditsRemaining;
 
     if (totalAvailable < creditsToDeduct) {
       return { success: false, usedFreeCredit: false };
@@ -87,7 +109,10 @@ export async function deductCredits(
 
     // First, try to use free credits
     if (freeCreditsRemaining > 0 && remainingToDeduct > 0) {
-      const freeCreditsToUse = Math.min(freeCreditsRemaining, remainingToDeduct);
+      const freeCreditsToUse = Math.min(
+        freeCreditsRemaining,
+        remainingToDeduct
+      );
 
       await updateDoc(userRef, {
         freeCreditsUsed: increment(freeCreditsToUse),
@@ -139,6 +164,7 @@ export async function deductCredits(
     return { success: true, usedFreeCredit };
   } catch (error) {
     console.error('Error deducting credits:', error);
+
     return { success: false, usedFreeCredit: false };
   }
 }
@@ -184,8 +210,11 @@ export async function recordGeneration({
       createdAt: new Date(),
     };
 
-    const docRef = await addDoc(collection(db, COLLECTIONS.GENERATIONS), generationData);
-    
+    const docRef = await addDoc(
+      collection(db, COLLECTIONS.GENERATIONS),
+      generationData
+    );
+
     return {
       id: docRef.id,
       ...generationData,
@@ -196,7 +225,10 @@ export async function recordGeneration({
   }
 }
 
-export async function getUserGenerations(userId: string, limitCount: number = 50) {
+export async function getUserGenerations(
+  userId: string,
+  limitCount: number = 50
+) {
   try {
     const generationsQuery = query(
       collection(db, COLLECTIONS.GENERATIONS),
@@ -206,12 +238,14 @@ export async function getUserGenerations(userId: string, limitCount: number = 50
     );
 
     const snapshot = await getDocs(generationsQuery);
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Generation[];
   } catch (error) {
     console.error('Error getting user generations:', error);
+
     return [];
   }
 }
@@ -225,12 +259,14 @@ export async function getUserPurchases(userId: string) {
     );
 
     const snapshot = await getDocs(purchasesQuery);
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Purchase[];
   } catch (error) {
     console.error('Error getting user purchases:', error);
+
     return [];
   }
 }
