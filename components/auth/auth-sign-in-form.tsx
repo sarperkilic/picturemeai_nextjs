@@ -9,7 +9,7 @@ import { Button } from '@heroui/button';
 import Link from 'next/link';
 
 import { GoogleIcon } from '@/components/icons';
-import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/lib/use-firebase-auth';
 
 interface AuthSignInFormProps extends React.ComponentProps<'div'> {}
 
@@ -18,7 +18,7 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite') || undefined;
   const returnTo = searchParams.get('returnTo') || undefined;
-  const callbackURL = returnTo;
+  const { signIn, signInWithGoogle } = useAuth();
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -29,18 +29,15 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
     try {
       setIsLoading(true);
       setError(null);
+      await signInWithGoogle();
+      
+      // Redirect after successful sign in
       if (inviteToken) {
-        await authClient.signIn.social({
-          provider: 'google',
-          callbackURL: `/invite/${inviteToken}`,
-        });
-      } else if (callbackURL) {
-        await authClient.signIn.social({ provider: 'google', callbackURL });
+        router.push(`/invite/${inviteToken}`);
+      } else if (returnTo) {
+        router.push(returnTo);
       } else {
-        await authClient.signIn.social({
-          provider: 'google',
-          callbackURL: '/dashboard',
-        });
+        router.push('/dashboard');
       }
     } catch (err) {
       setError('Failed to sign in with Google. Please try again.');
@@ -57,54 +54,24 @@ export function AuthSignInForm({ className, ...props }: AuthSignInFormProps) {
     if (!email || !password) {
       setError('Email and password are required.');
       setIsLoading(false);
-
       return;
     }
 
     try {
-      const { error: signInError } = await authClient.signIn.email(
-        { email, password, callbackURL, rememberMe: true },
-        {
-          onRequest: () => setIsLoading(true),
-          onSuccess: async () => {
-            try {
-              const params = new URLSearchParams();
-
-              if (inviteToken) params.set('invite', inviteToken);
-              if (returnTo) params.set('returnTo', returnTo);
-              const queryString = params.toString();
-              const apiUrl = `/api/auth/redirect${queryString ? `?${queryString}` : ''}`;
-              const response = await fetch(apiUrl);
-
-              if (response.ok) {
-                const data = await response.json();
-
-                router.push(data.redirectUrl);
-              } else {
-                if (inviteToken) router.push(`/invite/${inviteToken}`);
-                else if (returnTo) router.push(returnTo);
-                else router.push('/dashboard');
-              }
-            } catch (err) {
-              console.error('Error getting redirect URL:', err);
-              if (inviteToken) router.push(`/invite/${inviteToken}`);
-              else if (returnTo) router.push(returnTo);
-              else router.push('/dashboard');
-            }
-          },
-          onError: (ctx: { error?: { message?: string } }) => {
-            const errorMessage = ctx?.error?.message || 'Sign in failed';
-
-            console.log('Better-auth sign-in error:', errorMessage);
-            console.log('Full error context:', ctx);
-            setError(errorMessage);
-          },
-        }
-      );
-
-      if (signInError) setError(signInError.message || 'Sign in failed');
-    } catch {
-      setError('An unexpected error occurred');
+      await signIn(email, password);
+      
+      // Redirect after successful sign in
+      if (inviteToken) {
+        router.push(`/invite/${inviteToken}`);
+      } else if (returnTo) {
+        router.push(returnTo);
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Sign in failed';
+      setError(errorMessage);
+      console.error('Firebase sign-in error:', err);
     } finally {
       setIsLoading(false);
     }

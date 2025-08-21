@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardBody, CardHeader } from '@heroui/card';
 import { Spinner } from '@heroui/spinner';
 
-import { useSession } from '@/lib/auth-client';
+import { useSession } from '@/lib/use-firebase-auth';
 
 function EmailVerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, isPending } = useSession();
+  const { user, isLoading } = useSession();
 
   // Get invitation token and return URL from search params
   const inviteToken = searchParams.get('invite');
@@ -18,36 +18,19 @@ function EmailVerifiedContent() {
 
   useEffect(() => {
     // If user is signed in after email verification, redirect to appropriate dashboard
-    if (session?.user && !isPending) {
+    if (user && !isLoading) {
       const redirectUser = async () => {
         try {
-          // Build query parameters for auth redirect API
-          const params = new URLSearchParams();
-
-          if (inviteToken) params.set('invite', inviteToken);
-          if (returnTo) params.set('returnTo', returnTo);
-
-          const queryString = params.toString();
-          const apiUrl = `/api/auth/redirect${queryString ? `?${queryString}` : ''}`;
-
-          const response = await fetch(apiUrl);
-
-          if (response.ok) {
-            const data = await response.json();
-
-            router.push(data.redirectUrl);
+          // Simple redirect logic for Firebase auth
+          if (inviteToken) {
+            router.push(`/invite/${inviteToken}`);
+          } else if (returnTo) {
+            router.push(returnTo);
           } else {
-            // Fallback: handle invitation or return URL directly
-            if (inviteToken) {
-              router.push(`/invite/${inviteToken}`);
-            } else if (returnTo) {
-              router.push(returnTo);
-            } else {
-              router.push('/dashboard');
-            }
+            router.push('/dashboard');
           }
         } catch (error) {
-          console.error('Error getting redirect URL:', error);
+          console.error('Error redirecting:', error);
           // Fallback: handle invitation or return URL directly
           if (inviteToken) {
             router.push(`/invite/${inviteToken}`);
@@ -64,9 +47,9 @@ function EmailVerifiedContent() {
 
       return () => clearTimeout(timer);
     }
-  }, [session, isPending, router, inviteToken, returnTo]);
+  }, [user, isLoading, router, inviteToken, returnTo]);
 
-  if (isPending) {
+  if (isLoading) {
     return (
       <div className='flex items-center justify-center min-h-[80vh]'>
         <Card className='w-full max-w-md bg-content1/60 border border-default-100'>
@@ -112,7 +95,7 @@ function EmailVerifiedContent() {
             Thank you for verifying your email address. Your account is now
             fully activated.
           </p>
-          {session?.user && (
+          {user && (
             <div className='flex items-center justify-center gap-2 text-sm text-default-500'>
               <Spinner size='sm' />
               <span>Redirecting you to your dashboard...</span>

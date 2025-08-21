@@ -7,9 +7,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { title } from '@/components/primitives';
-import { redirectToCheckout } from '@/lib/stripe-client';
+// import { redirectToCheckout } from '@/lib/stripe-client'; // Temporarily disabled for iyzico migration
 import { ErrorToast } from '@/components/error-toast';
-import { useSession } from '@/lib/auth-client';
+import { useSession } from '@/lib/use-firebase-auth';
 import { CREDITS_CONFIG } from '@/config/app-config';
 
 const fadeUp: Variants = {
@@ -22,45 +22,35 @@ const fadeUp: Variants = {
 };
 
 export function Pricing() {
-  const { data: session } = useSession();
+  const { user } = useSession();
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = async (plan: 'STARTER' | 'CREATOR') => {
-    if (!session) {
+    if (!user) {
       router.push('/auth/sign-in');
-
       return;
     }
-    try {
-      setLoadingPlan(plan);
-      setError(null);
-
-      // Get price ID from environment variables (client-side)
-      const priceId =
-        plan === 'STARTER'
-          ? process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID
-          : process.env.NEXT_PUBLIC_STRIPE_CREATOR_PRICE_ID;
-
-      if (!priceId) {
-        throw new Error(
-          'Stripe configuration is missing. Please contact support.'
-        );
-      }
-
-      await redirectToCheckout(priceId);
-    } catch (error) {
-      console.error('Error starting checkout:', error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to start checkout. Please try again.';
-
-      setError(errorMessage);
-    } finally {
-      setLoadingPlan(null);
-    }
+    
+    // Temporarily disabled - iyzico integration pending
+    setError('Payment system is being updated. Please check back soon!');
+    
+    // TODO: Implement iyzico payment integration
+    // try {
+    //   setLoadingPlan(plan);
+    //   setError(null);
+    //   // iyzico payment logic will go here
+    // } catch (error) {
+    //   console.error('Error starting checkout:', error);
+    //   const errorMessage =
+    //     error instanceof Error
+    //       ? error.message
+    //       : 'Failed to start checkout. Please try again.';
+    //   setError(errorMessage);
+    // } finally {
+    //   setLoadingPlan(null);
+    // }
   };
 
   return (

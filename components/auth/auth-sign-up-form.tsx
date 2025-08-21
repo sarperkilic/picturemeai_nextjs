@@ -9,7 +9,7 @@ import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 
 import { GoogleIcon } from '@/components/icons';
-import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/lib/use-firebase-auth';
 
 interface AuthSignUpFormProps extends React.ComponentProps<'div'> {}
 
@@ -17,7 +17,7 @@ export function AuthSignUpForm({ className, ...props }: AuthSignUpFormProps) {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite') || undefined;
   const returnTo = searchParams.get('returnTo') || undefined;
-  const callbackURL = returnTo;
+  const { signUp, signInWithGoogle } = useAuth();
 
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
@@ -32,18 +32,16 @@ export function AuthSignUpForm({ className, ...props }: AuthSignUpFormProps) {
       setIsLoading(true);
       setError(null);
 
-      let redirectURL = '/dashboard';
-
+      await signInWithGoogle();
+      
+      // Redirect after successful sign up
       if (inviteToken) {
-        redirectURL = `/invite/${inviteToken}`;
-      } else if (callbackURL) {
-        redirectURL = callbackURL;
+        window.location.href = `/invite/${inviteToken}`;
+      } else if (returnTo) {
+        window.location.href = returnTo;
+      } else {
+        window.location.href = '/dashboard';
       }
-
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: redirectURL,
-      });
     } catch (err) {
       setError('Failed to sign up with Google. Please try again.');
       console.error('Google auth error:', err);
@@ -60,46 +58,21 @@ export function AuthSignUpForm({ className, ...props }: AuthSignUpFormProps) {
     if (!firstName || !lastName || !email || !password) {
       setError('All fields are required.');
       setIsLoading(false);
-
       return;
     }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       setIsLoading(false);
-
       return;
     }
 
     try {
-      let redirectURL = '/auth/email-verified';
-
-      if (inviteToken) {
-        redirectURL += `?invite=${inviteToken}`;
-      }
-
-      const { error } = await authClient.signUp.email(
-        {
-          email,
-          password,
-          name: `${firstName} ${lastName}`,
-          callbackURL: redirectURL,
-        },
-        {
-          onRequest: () => setIsLoading(true),
-          onSuccess: () => {
-            setSuccess(true);
-          },
-          onError: (ctx: { error: { message?: string } }) =>
-            setError(ctx.error.message || 'Sign up failed'),
-        }
-      );
-
-      if (error) {
-        setError(error.message || 'Sign up failed');
-      }
-    } catch {
-      setError('An unexpected error occurred');
+      await signUp(email, password, `${firstName} ${lastName}`);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err?.message || 'Sign up failed');
+      console.error('Firebase sign-up error:', err);
     } finally {
       setIsLoading(false);
     }

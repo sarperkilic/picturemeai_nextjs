@@ -42,7 +42,8 @@ export const API_CONFIG = {
     RECORD_GENERATION: '/api/record-generation',
     USER_CREDITS: '/api/user/credits',
     USER_GENERATIONS: '/api/user/generations',
-    STRIPE_CHECKOUT: '/api/stripe/create-checkout-session',
+    IYZICO_PAYMENT: '/api/iyzico/create-payment',
+    IYZICO_CALLBACK: '/api/iyzico/callback',
     AUTH_RESEND_VERIFICATION: '/api/auth/resend-verification',
   },
 

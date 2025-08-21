@@ -7,7 +7,7 @@ import { Input } from '@heroui/input';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 
-import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/lib/use-firebase-auth';
 
 interface ForgotPasswordFormProps extends React.ComponentProps<'div'> {}
 
@@ -15,6 +15,7 @@ export function ForgotPasswordForm({
   className,
   ...props
 }: ForgotPasswordFormProps) {
+  const { sendPasswordReset } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,30 +29,20 @@ export function ForgotPasswordForm({
     if (!email) {
       setError('Email is required.');
       setIsLoading(false);
-
       return;
     }
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
       setIsLoading(false);
-
       return;
     }
 
     try {
-      const { error } = await authClient.forgetPassword({
-        email,
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-
-      if (error) {
-        setError(error.message || 'Failed to send reset link');
-      } else {
-        setSuccess(true);
-      }
-    } catch {
-      setError('An unexpected error occurred');
+      await sendPasswordReset(email);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send reset link');
     } finally {
       setIsLoading(false);
     }

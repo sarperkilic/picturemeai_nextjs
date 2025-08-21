@@ -11,23 +11,23 @@ import { Button } from '@heroui/button';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { useSession, signOut } from '@/lib/auth-client';
+import { useAuth } from '@/lib/use-firebase-auth';
 
 interface UserMenuProps {
   onNavigate?: () => void;
 }
 
 export function UserMenu({ onNavigate }: UserMenuProps) {
-  const { data: session, isPending } = useSession();
+  const { user, isLoading, signOut } = useAuth();
   const router = useRouter();
 
-  if (isPending) {
+  if (isLoading) {
     return (
       <div className='w-8 h-8 animate-pulse bg-default-200 rounded-full' />
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <Button
         as={NextLink}
@@ -44,13 +44,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
   const handleLogout = async () => {
     try {
-      await signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            router.push('/auth/sign-in');
-          },
-        },
-      });
+      await signOut();
+      router.push('/auth/sign-in');
     } catch (error) {
       console.error('Failed to sign out:', error);
       // Fallback redirect even if signOut fails
@@ -58,9 +53,9 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     }
   };
 
-  const userEmail = session.user.email;
-  const userName = session.user.name || userEmail?.split('@')[0];
-  const userImage = session.user.image;
+  const userEmail = user.email;
+  const userName = user.name || userEmail?.split('@')[0];
+  const userImage = user.image;
 
   return (
     <Dropdown placement='bottom-end'>

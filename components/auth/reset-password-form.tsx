@@ -8,7 +8,7 @@ import { Input } from '@heroui/input';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 
-import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/lib/use-firebase-auth';
 
 interface ResetPasswordFormProps extends React.ComponentProps<'div'> {}
 
@@ -25,9 +25,9 @@ export function ResetPasswordForm({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Derive token and validation state from search params
-  const token = searchParams.get('token');
-  const isInvalidToken = !token;
+  // Firebase handles password reset via email link, not tokens
+  // This component is simplified for Firebase auth
+  const isInvalidToken = false; // Firebase doesn't use tokens in URL
 
   // Redirect to sign-in after successful password reset
   useEffect(() => {
@@ -42,48 +42,31 @@ export function ResetPasswordForm({
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!token) return;
-
     setIsLoading(true);
     setError(null);
 
     if (!password || !confirmPassword) {
       setError('Both password fields are required.');
       setIsLoading(false);
-
       return;
     }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       setIsLoading(false);
-
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       setIsLoading(false);
-
       return;
     }
 
-    try {
-      const { error } = await authClient.resetPassword({
-        newPassword: password,
-        token,
-      });
-
-      if (error) {
-        setError(error.message || 'Failed to reset password');
-      } else {
-        setSuccess(true);
-      }
-    } catch {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    // Firebase password reset is handled via email link
+    // This form is simplified - users should use the email link
+    setError('Please use the password reset link sent to your email.');
+    setIsLoading(false);
   };
 
   // Invalid token state

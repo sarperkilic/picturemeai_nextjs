@@ -6,7 +6,7 @@ import { Card } from '@heroui/card';
 import { generateWithFal, type ImageSize } from '@/lib/fal-client';
 import { PROMPT_LIBRARY, type PromptCategory } from '@/lib/prompt-presets';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { useSession } from '@/lib/auth-client';
+import { useSession } from '@/lib/use-firebase-auth';
 import { useCreditsStore } from '@/lib/credits-store';
 import { ImageUploadSection } from '@/components/dashboard/ImageUploadSection';
 import { GenerationSettingsPanel } from '@/components/dashboard/GenerationSettingsPanel';
@@ -17,7 +17,7 @@ import { API_CONFIG, CREDITS_CONFIG } from '@/config/app-config';
 type GeneratedItem = { id: string; url: string };
 
 export function DashboardClient() {
-  const { data: session } = useSession();
+  const { user } = useSession();
   const { creditInfo, fetchCredits } = useCreditsStore();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
@@ -43,11 +43,11 @@ export function DashboardClient() {
 
   // Load existing generations and credits on component mount
   useEffect(() => {
-    if (session?.user.id) {
+    if (user?.id) {
       loadExistingGenerations();
       fetchCredits();
     }
-  }, [session?.user.id]);
+  }, [user?.id]);
 
   // Auto-populate prompt when category changes
   useEffect(() => {
@@ -196,7 +196,7 @@ export function DashboardClient() {
 
   return (
     <ErrorBoundary>
-      {session?.user.id && <FirstTimeUserModal userId={session.user.id} />}
+      {user?.id && <FirstTimeUserModal userId={user.id} />}
       <section className='w-full min-h-screen'>
         <div className='w-full px-6 py-8'>
           <div className='container mx-auto max-w-7xl'>
