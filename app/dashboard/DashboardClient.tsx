@@ -13,7 +13,6 @@ import { FirebaseAuthClient } from '@/lib/firebase-auth';
 import { ImageUploadSection } from '@/components/dashboard/ImageUploadSection';
 import { GenerationSettingsPanel } from '@/components/dashboard/GenerationSettingsPanel';
 import { GeneratedGallery } from '@/components/dashboard/GeneratedGallery';
-import { FirstTimeUserModal } from '@/components/first-time-user-modal';
 import { API_CONFIG, CREDITS_CONFIG } from '@/config/app-config';
 
 type GeneratedItem = { id: string; url: string };
@@ -225,7 +224,6 @@ export function DashboardClient() {
 
   return (
     <ErrorBoundary>
-      {user?.id && <FirstTimeUserModal userId={user.id} />}
       <section className='w-full min-h-screen'>
         <div className='w-full px-6 py-8'>
           <div className='container mx-auto max-w-7xl'>
