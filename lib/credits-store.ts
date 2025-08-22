@@ -5,9 +5,7 @@ import { create } from 'zustand';
 import { FirebaseAuthClient } from './firebase-auth';
 
 interface CreditInfo {
-  total: number;
-  paidCredits: number;
-  freeCredits: number;
+  credits: number;
 }
 
 interface CreditsStore {
@@ -29,34 +27,11 @@ export const useCreditsStore = create<CreditsStore>(set => ({
         return {};
       }
 
-      // Calculate new credit breakdown
-      let remainingToDeduct = amount;
-      let newFreeCredits = state.creditInfo.freeCredits;
-      let newPaidCredits = state.creditInfo.paidCredits;
-
-      // First deduct from free credits
-      if (newFreeCredits > 0 && remainingToDeduct > 0) {
-        const freeToDeduct = Math.min(newFreeCredits, remainingToDeduct);
-
-        newFreeCredits -= freeToDeduct;
-        remainingToDeduct -= freeToDeduct;
-      }
-
-      // Then deduct from paid credits
-      if (newPaidCredits > 0 && remainingToDeduct > 0) {
-        const paidToDeduct = Math.min(newPaidCredits, remainingToDeduct);
-
-        newPaidCredits -= paidToDeduct;
-        remainingToDeduct -= paidToDeduct;
-      }
-
-      const newTotal = newFreeCredits + newPaidCredits;
+      const newCredits = Math.max(0, state.creditInfo.credits - amount);
 
       return {
         creditInfo: {
-          total: newTotal,
-          freeCredits: newFreeCredits,
-          paidCredits: newPaidCredits,
+          credits: newCredits,
         },
       };
     }),
@@ -66,42 +41,45 @@ export const useCreditsStore = create<CreditsStore>(set => ({
       if (state.creditInfo === null) {
         return {
           creditInfo: {
-            total: amount,
-            paidCredits: amount,
-            freeCredits: 0,
+            credits: amount,
           },
         };
       }
 
-      const newTotal = state.creditInfo.total + amount;
-
       return {
         creditInfo: {
-          ...state.creditInfo,
-          total: newTotal,
-          paidCredits: state.creditInfo.paidCredits + amount,
+          credits: state.creditInfo.credits + amount,
         },
       };
     }),
 
   fetchCredits: async () => {
     try {
-      const response =
-        await FirebaseAuthClient.authenticatedRequest('/api/user/credits');
-
-      if (response.ok) {
-        const data = await response.json();
-
-        set({
-          creditInfo: {
-            total: data.total,
-            paidCredits: data.paidCredits,
-            freeCredits: data.freeCredits,
-          },
-        });
+      console.log('fetchCredits: Starting...');
+      const currentUser = FirebaseAuthClient.getCurrentUser();
+      
+      if (!currentUser) {
+        console.error('fetchCredits: No authenticated user found');
+        return;
       }
+
+      console.log('fetchCredits: User found:', currentUser.uid);
+
+      // Fetch credits directly from Firestore
+      const { getUserCredits } = await import('./credits');
+      const credits = await getUserCredits(currentUser.uid);
+
+      console.log('fetchCredits: Credits fetched:', credits);
+
+      set({
+        creditInfo: {
+          credits: credits,
+        },
+      });
+      
+      console.log('fetchCredits: State updated with credits:', credits);
     } catch (error) {
-      console.error('Error fetching credits:', error);
+      console.error('fetchCredits: Error fetching credits:', error);
     }
   },
 }));

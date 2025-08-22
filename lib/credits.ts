@@ -16,74 +16,47 @@ import { User, Generation, Purchase, COLLECTIONS } from '@/types/firebase';
 
 import { db } from './firebase';
 
-// Credits configuration
-const CREDITS_CONFIG = {
-  FREE_CREDITS_PER_USER: 1,
-};
-
 export async function getUserCredits(userId: string): Promise<number> {
   try {
+    console.log('getUserCredits: Fetching for user:', userId);
     const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
 
     if (userDoc.exists()) {
       const userData = userDoc.data() as User;
+      console.log('getUserCredits: User data:', userData);
+      console.log('getUserCredits: Credits from data:', userData.credits);
 
-      return userData.availableCredits || 0;
+      return userData.credits || 0;
     }
 
+    console.log('getUserCredits: User document does not exist');
     return 0;
   } catch (error) {
-    console.error('Error getting user credits:', error);
+    console.error('getUserCredits: Error getting user credits:', error);
 
     return 0;
   }
 }
 
-/**
- * Get available free credits for a user
- */
-export async function getUserFreeCredits(userId: string): Promise<number> {
-  try {
-    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
 
-    if (!userDoc.exists()) return 0;
-
-    const userData = userDoc.data() as User;
-    const freeCreditsRemaining =
-      CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0);
-
-    return Math.max(0, freeCreditsRemaining);
-  } catch (error) {
-    console.error('Error getting user free credits:', error);
-
-    return 0;
-  }
-}
 
 /**
  * Get total available credits (paid + free)
  */
 export async function getTotalAvailableCredits(userId: string): Promise<{
-  paidCredits: number;
-  freeCredits: number;
-  total: number;
+  credits: number;
 }> {
-  const [paidCredits, freeCredits] = await Promise.all([
-    getUserCredits(userId),
-    getUserFreeCredits(userId),
-  ]);
+  const credits = await getUserCredits(userId);
 
   return {
-    paidCredits,
-    freeCredits,
-    total: paidCredits + freeCredits,
+    credits,
   };
 }
 
 export async function deductCredits(
   userId: string,
   creditsToDeduct: number = 1
-): Promise<{ success: boolean; usedFreeCredit: boolean }> {
+): Promise<{ success: boolean }> {
   try {
     const userRef = doc(db, COLLECTIONS.USERS, userId);
     const userDoc = await getDoc(userRef);
@@ -93,79 +66,23 @@ export async function deductCredits(
     }
 
     const userData = userDoc.data() as User;
-    const freeCreditsRemaining = Math.max(
-      0,
-      CREDITS_CONFIG.FREE_CREDITS_PER_USER - (userData.freeCreditsUsed || 0)
-    );
-    const totalAvailable =
-      (userData.availableCredits || 0) + freeCreditsRemaining;
+    const availableCredits = userData.credits || 0;
 
-    if (totalAvailable < creditsToDeduct) {
-      return { success: false, usedFreeCredit: false };
+    if (availableCredits < creditsToDeduct) {
+      return { success: false };
     }
 
-    let usedFreeCredit = false;
-    let remainingToDeduct = creditsToDeduct;
+    // Deduct credits
+    await updateDoc(userRef, {
+      credits: increment(-creditsToDeduct),
+      updatedAt: new Date(),
+    });
 
-    // First, try to use free credits
-    if (freeCreditsRemaining > 0 && remainingToDeduct > 0) {
-      const freeCreditsToUse = Math.min(
-        freeCreditsRemaining,
-        remainingToDeduct
-      );
-
-      await updateDoc(userRef, {
-        freeCreditsUsed: increment(freeCreditsToUse),
-        updatedAt: new Date(),
-      });
-
-      remainingToDeduct -= freeCreditsToUse;
-      usedFreeCredit = true;
-    }
-
-    // Then, use paid credits if needed
-    if (remainingToDeduct > 0) {
-      await updateDoc(userRef, {
-        availableCredits: increment(-remainingToDeduct),
-        updatedAt: new Date(),
-      });
-
-      // Update purchase records (deduct from most recent first)
-      const purchasesQuery = query(
-        collection(db, COLLECTIONS.PURCHASES),
-        where('userId', '==', userId),
-        where('creditsRemaining', '>', 0),
-        where('status', '==', 'COMPLETED'),
-        orderBy('createdAt', 'desc')
-      );
-
-      const purchasesSnapshot = await getDocs(purchasesQuery);
-      let purchaseDeductRemaining = remainingToDeduct;
-
-      for (const purchaseDoc of purchasesSnapshot.docs) {
-        if (purchaseDeductRemaining <= 0) break;
-
-        const purchaseData = purchaseDoc.data() as Purchase;
-        const deductFromThisPurchase = Math.min(
-          purchaseDeductRemaining,
-          purchaseData.creditsRemaining
-        );
-
-        await updateDoc(doc(db, COLLECTIONS.PURCHASES, purchaseDoc.id), {
-          creditsUsed: increment(deductFromThisPurchase),
-          creditsRemaining: increment(-deductFromThisPurchase),
-          updatedAt: new Date(),
-        });
-
-        purchaseDeductRemaining -= deductFromThisPurchase;
-      }
-    }
-
-    return { success: true, usedFreeCredit };
+    return { success: true };
   } catch (error) {
     console.error('Error deducting credits:', error);
 
-    return { success: false, usedFreeCredit: false };
+    return { success: false };
   }
 }
 
@@ -180,7 +97,6 @@ export async function recordGeneration({
   renderingSpeed,
   falRequestId,
   creditsUsed = 1,
-  usedFreeCredit = false,
 }: {
   userId: string;
   prompt: string;
@@ -192,7 +108,6 @@ export async function recordGeneration({
   renderingSpeed: string;
   falRequestId?: string;
   creditsUsed?: number;
-  usedFreeCredit?: boolean;
 }) {
   try {
     const generationData: Omit<Generation, 'id'> = {
@@ -206,7 +121,6 @@ export async function recordGeneration({
       renderingSpeed,
       falRequestId,
       creditsUsed,
-      usedFreeCredit,
       createdAt: new Date(),
     };
 

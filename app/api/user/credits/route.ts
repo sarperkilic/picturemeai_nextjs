@@ -15,9 +15,7 @@ export async function GET() {
     const creditInfo = await getTotalAvailableCredits(session.user.id);
 
     return NextResponse.json({
-      paidCredits: creditInfo.paidCredits,
-      freeCredits: creditInfo.freeCredits,
-      total: creditInfo.total,
+      credits: creditInfo.credits,
     });
   } catch (error) {
     console.error('Error fetching user credits:', error);

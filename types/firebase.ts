@@ -2,19 +2,12 @@
 
 export interface User {
   id: string;
-  name: string;
+  tier: string; // "free" | "pro"
+  credits: number;
   email: string;
-  emailVerified: boolean;
-  image?: string;
+  name: string;
   createdAt: Date;
   updatedAt: Date;
-
-  // Credits system
-  availableCredits: number;
-  freeCreditsUsed: number;
-
-  // iyzico fields
-  iyzicoCustomerId?: string;
 }
 
 export interface Purchase {
@@ -59,7 +52,6 @@ export interface Generation {
 
   // Tracking
   creditsUsed: number; // Usually 1 credit per generation
-  usedFreeCredit: boolean; // Whether this generation used a free credit
   falRequestId?: string; // FAL request ID for tracking
 
   createdAt: Date;

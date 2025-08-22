@@ -10,6 +10,10 @@ export function ConditionalNavbar() {
   const pathname = usePathname();
   const { user } = useSession();
 
+  console.log('ConditionalNavbar - pathname:', pathname);
+  console.log('ConditionalNavbar - user:', user);
+  console.log('ConditionalNavbar - userId:', user?.id);
+
   // Use dashboard navbar for dashboard routes
   if (pathname?.startsWith('/dashboard')) {
     return <DashboardNavbar userId={user?.id} />;

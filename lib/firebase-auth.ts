@@ -9,12 +9,35 @@ import {
   User as FirebaseUser,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 import { User } from '@/types/firebase';
 import { COLLECTIONS } from '@/types/firebase';
 
 import { auth, db } from './firebase';
+
+// Upsert user function as per db_todos.md
+export async function upsertUser(uid: string, email: string, name: string) {
+  const ref = doc(db, COLLECTIONS.USERS, uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      tier: "free",
+      credits: 50,
+      email,
+      name,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }); // create
+  } else {
+    await updateDoc(ref, {
+      email,
+      name,
+      updatedAt: serverTimestamp(),
+    }); // update
+  }
+}
 
 // Firebase Auth Client
 export class FirebaseAuthClient {
@@ -43,18 +66,8 @@ export class FirebaseAuthClient {
       );
       const user = userCredential.user;
 
-      // Create user document in Firestore
-      const userData: Omit<User, 'id'> = {
-        name,
-        email,
-        emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        availableCredits: 1, // Free credit for new users
-        freeCreditsUsed: 0,
-      };
-
-      await setDoc(doc(db, COLLECTIONS.USERS, user.uid), userData);
+      // Create user document in Firestore using upsertUser
+      await upsertUser(user.uid, email, name);
 
       // Send email verification
       await sendEmailVerification(user);
@@ -72,23 +85,8 @@ export class FirebaseAuthClient {
       const userCredential = await signInWithPopup(auth, provider);
       const user = userCredential.user;
 
-      // Check if user document exists, if not create it
-      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid));
-
-      if (!userDoc.exists()) {
-        const userData: Omit<User, 'id'> = {
-          name: user.displayName || 'User',
-          email: user.email || '',
-          emailVerified: user.emailVerified,
-          image: user.photoURL || undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          availableCredits: 1, // Free credit for new users
-          freeCreditsUsed: 0,
-        };
-
-        await setDoc(doc(db, COLLECTIONS.USERS, user.uid), userData);
-      }
+      // Create or update user document using upsertUser
+      await upsertUser(user.uid, user.email || '', user.displayName || 'User');
 
       return user;
     } catch (error) {

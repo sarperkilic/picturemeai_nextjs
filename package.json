@@ -10,7 +10,9 @@
     "lint": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint:fix": "eslint --fix && prettier --write ."
+    "lint:fix": "eslint --fix && prettier --write .",
+    "migrate-users": "tsx scripts/migrate-users.ts",
+    "migrate-users-client": "tsx scripts/migrate-users-client.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.1",
@@ -81,6 +83,7 @@
     "tailwind-variants": "2.0.1",
     "tailwindcss": "4.1.11",
     "tsx": "^4.20.3",
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "dotenv": "^16.4.5"
   }
 }

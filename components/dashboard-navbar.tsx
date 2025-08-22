@@ -16,6 +16,8 @@ interface DashboardNavbarProps {
 }
 
 export const DashboardNavbar = ({ userId }: DashboardNavbarProps) => {
+  console.log('DashboardNavbar - userId:', userId);
+  
   return (
     <HeroUINavbar
       className='backdrop-blur supports-[backdrop-filter]:bg-background/60'

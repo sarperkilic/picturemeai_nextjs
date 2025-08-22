@@ -21,14 +21,19 @@ export function CreditsDisplay({
 
   useEffect(() => {
     const loadCredits = async () => {
-      if (creditInfo === null) {
+      try {
+        console.log('Loading credits for user:', userId);
         await fetchCredits();
+        console.log('Credits loaded successfully');
+      } catch (error) {
+        console.error('Error loading credits:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadCredits();
-  }, [userId, creditInfo, fetchCredits]);
+  }, [userId, fetchCredits]);
 
   if (loading) {
     return compact ? (
@@ -49,7 +54,11 @@ export function CreditsDisplay({
   }
 
   if (compact) {
-    const zeroCredits = creditInfo === null || creditInfo?.total === 0;
+    const zeroCredits = creditInfo === null || creditInfo?.credits === 0;
+    
+    // Debug logging
+    console.log('CreditsDisplay compact - creditInfo:', creditInfo);
+    console.log('CreditsDisplay compact - zeroCredits:', zeroCredits);
 
     return (
       <div className='flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-primary-50 to-secondary-50 border border-primary-200 rounded-full'>
@@ -64,17 +73,9 @@ export function CreditsDisplay({
           <span className='text-xs text-default-600'>Credits:</span>
           <div className='flex items-center gap-1'>
             {creditInfo ? (
-              <>
-                {creditInfo.freeCredits > 0 ? (
-                  <span className='text-xs text-success font-medium'>
-                    {creditInfo.freeCredits} free + {creditInfo.paidCredits}
-                  </span>
-                ) : (
-                  <span className='text-sm font-bold text-primary'>
-                    {creditInfo.total}
-                  </span>
-                )}
-              </>
+              <span className='text-sm font-bold text-primary'>
+                {creditInfo.credits}
+              </span>
             ) : (
               <span className='text-sm font-bold text-primary'>0</span>
             )}
@@ -99,12 +100,12 @@ export function CreditsDisplay({
   return (
     <Card className='w-full bg-gradient-to-r from-primary-50 to-secondary-50 border border-primary-200'>
       <CardBody className='text-center'>
-        {creditInfo === null || creditInfo?.total === 0 ? (
+        {creditInfo === null || creditInfo?.credits === 0 ? (
           <div className='flex items-center justify-between'>
             <div className='text-left'>
               <p className='text-sm text-default-600'>Available Credits</p>
               <p className='text-2xl font-bold text-primary'>
-                {creditInfo?.total ?? '0'}
+                {creditInfo?.credits ?? '0'}
               </p>
             </div>
             <Button
@@ -121,17 +122,8 @@ export function CreditsDisplay({
           <div className='text-center'>
             <p className='text-sm text-default-600'>Available Credits</p>
             <p className='text-3xl font-bold text-primary mb-2'>
-              {creditInfo?.total ?? 0}
+              {creditInfo?.credits ?? 0}
             </p>
-            {creditInfo && creditInfo.freeCredits > 0 && (
-              <div className='flex justify-center items-center gap-3 mb-2'>
-                <div className='text-center'>
-                  <p className='text-xs text-success font-medium'>
-                    {creditInfo.freeCredits} free credits remaining
-                  </p>
-                </div>
-              </div>
-            )}
             <p className='text-xs text-default-500'>
               Each generation uses 1 credit
             </p>
