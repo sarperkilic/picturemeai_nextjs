@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { Project, Render } from '@/types/firebase';
 import { CreateProjectData, UpdateProjectData, CreateRenderData, UpdateRenderData } from '@/types/projects';
 import { FirebaseAuthClient } from './firebase-auth';
+import { 
+  subscribeToProjectUpdates, 
+  subscribeToUserProjects, 
+  subscribeToActiveRenders 
+} from './projects-realtime';
 
 interface ProjectsState {
   projects: Project[];
@@ -9,6 +14,7 @@ interface ProjectsState {
   currentProjectRenders: Render[];
   isLoading: boolean;
   error: string | null;
+  realtimeSubscriptions: Map<string, () => void>;
   
   // Actions
   fetchProjects: (userId: string) => Promise<void>;
@@ -23,6 +29,12 @@ interface ProjectsState {
   deleteRender: (userId: string, projectId: string, renderId: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   clearError: () => void;
+  
+  // Real-time subscription methods
+  subscribeToProjectRealtime: (userId: string, projectId: string) => () => void;
+  subscribeToProjectsRealtime: (userId: string, limit?: number) => () => void;
+  subscribeToActiveRendersRealtime: (userId: string, projectId: string) => () => void;
+  unsubscribeAll: () => void;
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
@@ -31,6 +43,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   currentProjectRenders: [],
   isLoading: false,
   error: null,
+  realtimeSubscriptions: new Map(),
 
   fetchProjects: async (userId: string) => {
     set({ isLoading: true, error: null });
@@ -256,5 +269,69 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  subscribeToProjectRealtime: (userId: string, projectId: string) => {
+    const { realtimeSubscriptions } = get();
+    const key = `project-${projectId}`;
+    
+    // Unsubscribe if already subscribed
+    if (realtimeSubscriptions.has(key)) {
+      realtimeSubscriptions.get(key)?.();
+    }
+    
+    const unsubscribe = subscribeToProjectUpdates(userId, projectId, (project: Project | null, renders: Render[]) => {
+      set({ currentProject: project, currentProjectRenders: renders });
+    });
+    
+    realtimeSubscriptions.set(key, unsubscribe);
+    set({ realtimeSubscriptions });
+    
+    return unsubscribe;
+  },
+
+  subscribeToProjectsRealtime: (userId: string, limit: number = 10) => {
+    const { realtimeSubscriptions } = get();
+    const key = `projects-${userId}`;
+    
+    // Unsubscribe if already subscribed
+    if (realtimeSubscriptions.has(key)) {
+      realtimeSubscriptions.get(key)?.();
+    }
+    
+    const unsubscribe = subscribeToUserProjects(userId, limit, (projects: Project[]) => {
+      set({ projects });
+    });
+    
+    realtimeSubscriptions.set(key, unsubscribe);
+    set({ realtimeSubscriptions });
+    
+    return unsubscribe;
+  },
+
+  subscribeToActiveRendersRealtime: (userId: string, projectId: string) => {
+    const { realtimeSubscriptions } = get();
+    const key = `active-renders-${projectId}`;
+    
+    // Unsubscribe if already subscribed
+    if (realtimeSubscriptions.has(key)) {
+      realtimeSubscriptions.get(key)?.();
+    }
+    
+    const unsubscribe = subscribeToActiveRenders(userId, projectId, (renders: Render[]) => {
+      set({ currentProjectRenders: renders });
+    });
+    
+    realtimeSubscriptions.set(key, unsubscribe);
+    set({ realtimeSubscriptions });
+    
+    return unsubscribe;
+  },
+
+  unsubscribeAll: () => {
+    const { realtimeSubscriptions } = get();
+    realtimeSubscriptions.forEach(unsubscribe => unsubscribe());
+    realtimeSubscriptions.clear();
+    set({ realtimeSubscriptions });
   },
 })); 

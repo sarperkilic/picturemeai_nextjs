@@ -13,6 +13,9 @@ import { Button } from '@heroui/button';
 
 import { CheckIcon } from '@/components/icons';
 import { useUGCStore } from '@/lib/ugc-store';
+import { VideoGenerationService } from '@/lib/video-generation-service';
+import { useSession } from '@/lib/use-firebase-auth';
+import { useProjectsStore } from '@/lib/projects-store';
 
 import { ImageStep } from './ugc-steps/ImageStep';
 import { AudioTextStep } from './ugc-steps/AudioTextStep';
@@ -25,6 +28,8 @@ const STEPS = [
 ];
 
 export function UGCModal() {
+  const { user } = useSession();
+  const { fetchProjectsForDashboard } = useProjectsStore();
   const {
     isModalOpen,
     setIsModalOpen,
@@ -34,6 +39,7 @@ export function UGCModal() {
     resetVideoConfig,
   } = useUGCStore();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
 
   const handleClose = () => {
     setIsModalOpen(false);
@@ -95,20 +101,46 @@ export function UGCModal() {
   };
 
   const handleGenerate = async () => {
-    if (!isAllStepsCompleted()) return;
+    if (!isAllStepsCompleted() || !user?.id) return;
 
     setIsGenerating(true);
+    setProgressMessage('Starting video generation...');
+    
     try {
-      // TODO: Implement actual video generation API call
-      console.log('Generating video with config:', videoConfig);
+      const config = {
+        script: videoConfig.audio.text,
+        voiceId: videoConfig.audio.voice,
+        avatarId: videoConfig.character.avatarId || 'default',
+        imageUrl: videoConfig.character.imageUrl || '',
+      };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await VideoGenerationService.generateVideoWithErrorHandling(
+        user.id,
+        config,
+        (message) => {
+          setProgressMessage(message);
+        }
+      );
 
-      // TODO: Add generated video to store
-      handleClose();
+      console.log('Video generated successfully:', result);
+      setProgressMessage('Video generated successfully!');
+
+      // Refresh projects in dashboard
+      await fetchProjectsForDashboard(user.id, 10);
+
+      // Close modal after a brief delay to show success message
+      setTimeout(() => {
+        handleClose();
+      }, 1500);
+      
     } catch (error) {
       console.error('Error generating video:', error);
+      setProgressMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setProgressMessage('');
+      }, 5000);
     } finally {
       setIsGenerating(false);
     }
@@ -212,14 +244,19 @@ export function UGCModal() {
               </Button>
 
               {currentStep === STEPS.length - 1 ? (
-                <Button
-                  color='primary'
-                  isDisabled={!isAllStepsCompleted()}
-                  isLoading={isGenerating}
-                  onPress={handleGenerate}
-                >
-                  Generate Video
-                </Button>
+                <div className='flex flex-col items-end gap-2'>
+                  {progressMessage && (
+                    <p className='text-sm text-default-500'>{progressMessage}</p>
+                  )}
+                  <Button
+                    color='primary'
+                    isDisabled={!isAllStepsCompleted() || !user?.id}
+                    isLoading={isGenerating}
+                    onPress={handleGenerate}
+                  >
+                    Generate Video
+                  </Button>
+                </div>
               ) : (
                 <Button
                   color='primary'

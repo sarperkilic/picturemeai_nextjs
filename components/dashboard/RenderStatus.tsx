@@ -1,39 +1,64 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardBody } from '@heroui/card';
 import { Chip } from '@heroui/chip';
+import { Button } from '@heroui/button';
 
+import { useActiveRendersRealtime, useProjectRendersRealtime } from '@/lib/use-realtime-updates';
 import { Render } from '@/types/firebase';
 
 interface RenderStatusProps {
-  renders: Render[];
   projectId: string;
+  onComplete?: () => void;
 }
 
-export function RenderStatus({ renders, projectId }: RenderStatusProps) {
-  const getStatusColor = (status: string) => {
+export function RenderStatus({ projectId, onComplete }: RenderStatusProps) {
+  const { activeRenders, hasActiveRenders, isLoading } = useActiveRendersRealtime(projectId);
+  const { renders } = useProjectRendersRealtime(projectId);
+  const [progress, setProgress] = useState(0);
+
+  // Calculate overall progress based on render statuses
+  useEffect(() => {
+    if (renders.length === 0) return;
+
+    const totalRenders = renders.length;
+    const completedRenders = renders.filter(render => render.status === 'succeeded').length;
+    const failedRenders = renders.filter(render => render.status === 'failed').length;
+    
+    // Calculate progress percentage
+    const progressPercentage = (completedRenders / totalRenders) * 100;
+    setProgress(progressPercentage);
+
+    // Check if all renders are complete
+    if (completedRenders + failedRenders === totalRenders) {
+      onComplete?.();
+    }
+  }, [renders, onComplete]);
+
+  const getRenderStatusColor = (status: string) => {
     switch (status) {
       case 'succeeded':
         return 'success';
-      case 'running':
-        return 'warning';
       case 'failed':
         return 'danger';
+      case 'running':
+        return 'warning';
       case 'queued':
-        return 'primary';
+        return 'default';
       default:
         return 'default';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getRenderStatusText = (status: string) => {
     switch (status) {
       case 'succeeded':
         return 'Complete';
-      case 'running':
-        return 'Processing';
       case 'failed':
         return 'Failed';
+      case 'running':
+        return 'Running';
       case 'queued':
         return 'Queued';
       default:
@@ -41,92 +66,123 @@ export function RenderStatus({ renders, projectId }: RenderStatusProps) {
     }
   };
 
-  const getProgressValue = (status: string) => {
-    switch (status) {
-      case 'queued':
-        return 0;
-      case 'running':
-        return 50;
-      case 'succeeded':
-        return 100;
-      case 'failed':
-        return 0;
-      default:
-        return 0;
-    }
-  };
-
-  const getRenderTypeText = (kind: string) => {
-    switch (kind) {
+  const getRenderName = (render: Render) => {
+    switch (render.kind) {
       case 'tts':
         return 'Text-to-Speech';
       case 'avatar':
-        return 'Avatar Generation';
+        return 'Talking Head';
       case 'final':
         return 'Final Video';
       default:
-        return kind;
+        return render.kind;
     }
   };
 
-  if (renders.length === 0) {
+  if (isLoading) {
     return (
-      <Card className='w-full'>
+      <Card className='bg-content1/60 border border-default-100'>
         <CardBody className='p-4'>
-          <div className='text-center py-4'>
-            <p className='text-sm text-default-500'>No renders yet</p>
+          <div className='flex items-center justify-center py-4'>
+            <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
+            <span className='ml-3 text-default-500'>Loading render status...</span>
           </div>
         </CardBody>
       </Card>
     );
   }
 
+  if (!hasActiveRenders && renders.length === 0) {
+    return null;
+  }
+
   return (
-    <Card className='w-full'>
+    <Card className='bg-content1/60 border border-default-100'>
       <CardBody className='p-4'>
-        <h3 className='font-semibold text-foreground mb-3'>Render Status</h3>
-        <div className='space-y-3'>
-          {renders.map((render) => (
-            <div key={render.id} className='space-y-2'>
-              <div className='flex items-center justify-between'>
-                <span className='text-sm font-medium text-foreground'>
-                  {getRenderTypeText(render.kind)}
-                </span>
-                <Chip
-                  size='sm'
-                  color={getStatusColor(render.status)}
-                  variant='flat'
-                >
-                  {getStatusText(render.status)}
-                </Chip>
+        <div className='space-y-4'>
+          {/* Overall Progress */}
+          <div>
+            <div className='flex items-center justify-between mb-2'>
+              <h3 className='text-sm font-medium text-foreground'>Generation Progress</h3>
+              <span className='text-sm text-default-500'>{Math.round(progress)}%</span>
+            </div>
+            <div className='w-full bg-default-200 rounded-full h-2'>
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  progress === 100 ? 'bg-success' : 'bg-primary'
+                }`}
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Render Status List */}
+          <div className='space-y-3'>
+            {renders.map((render) => (
+              <div key={render.id} className='flex items-center justify-between p-3 bg-background/50 rounded-lg'>
+                <div className='flex items-center gap-3'>
+                  <div className='w-8 h-8 rounded-full bg-default-100 flex items-center justify-center'>
+                    {render.kind === 'tts' && '🎤'}
+                    {render.kind === 'avatar' && '🎬'}
+                    {render.kind === 'final' && '🎥'}
+                  </div>
+                  <div>
+                    <p className='text-sm font-medium text-foreground'>
+                      {getRenderName(render)}
+                    </p>
+                    <p className='text-xs text-default-500'>
+                      {render.model}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className='flex items-center gap-2'>
+                  <Chip
+                    size='sm'
+                    color={getRenderStatusColor(render.status)}
+                    variant='flat'
+                  >
+                    {getRenderStatusText(render.status)}
+                  </Chip>
+                  
+                  {render.status === 'failed' && render.error && (
+                    <Button
+                      size='sm'
+                      variant='light'
+                      isIconOnly
+                      title={render.error}
+                    >
+                      ⚠️
+                    </Button>
+                  )}
+                </div>
               </div>
-              
-              {render.status === 'running' && (
-                <div className='space-y-1'>
-                  <div className='flex justify-between text-xs text-default-500'>
-                    <span>Processing...</span>
-                    <span>{getProgressValue(render.status)}%</span>
-                  </div>
-                  <div className='w-full bg-default-200 rounded-full h-2'>
-                    <div 
-                      className='bg-primary h-2 rounded-full transition-all duration-300'
-                      style={{ width: `${getProgressValue(render.status)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+            ))}
+          </div>
 
-              {render.error && (
-                <div className='text-xs text-danger bg-danger-50 p-2 rounded'>
-                  Error: {render.error}
-                </div>
-              )}
-
-              <div className='text-xs text-default-400'>
-                Model: {render.model} • ID: {render.providerJobId}
+          {/* Active Renders */}
+          {hasActiveRenders && (
+            <div className='mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg'>
+              <div className='flex items-center gap-2'>
+                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-warning'></div>
+                <span className='text-sm text-warning-600'>
+                  {activeRenders.length} render{activeRenders.length > 1 ? 's' : ''} in progress...
+                </span>
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Completion Status */}
+          {progress === 100 && (
+            <div className='mt-4 p-3 bg-success/10 border border-success/20 rounded-lg'>
+              <div className='flex items-center gap-2'>
+                <span className='text-success-600'>✅</span>
+                <span className='text-sm text-success-600 font-medium'>
+                  Video generation complete!
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </CardBody>
     </Card>

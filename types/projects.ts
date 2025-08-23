@@ -35,4 +35,5 @@ export interface UpdateRenderData {
   status?: RenderStatus;
   output?: Record<string, any>;
   error?: string;
+  providerJobId?: string;
 } 

@@ -8,22 +8,28 @@ import { Chip } from '@heroui/chip';
 import { RefreshIcon, SearchIcon, PlayIcon, DownloadIcon, ShareIcon } from '@/components/icons';
 import { useProjectsStore } from '@/lib/projects-store';
 import { useSession } from '@/lib/use-firebase-auth';
+import { useUGCStore } from '@/lib/ugc-store';
+import { useProjectsRealtime } from '@/lib/use-realtime-updates';
 import { Project } from '@/types/firebase';
 
 export function GeneratedVideosSection() {
   const { user } = useSession();
+  const { setIsModalOpen } = useUGCStore();
+  
+  // Use real-time updates for projects
   const { 
     projects, 
     isLoading, 
     error, 
-    fetchProjectsForDashboard 
-  } = useProjectsStore();
+    unsubscribe 
+  } = useProjectsRealtime(10);
 
+  // Cleanup subscription on unmount
   useEffect(() => {
-    if (user?.id) {
-      fetchProjectsForDashboard(user.id, 10);
-    }
-  }, [user?.id, fetchProjectsForDashboard]);
+    return () => {
+      unsubscribe();
+    };
+  }, [unsubscribe]);
 
   const formatDate = (date: any) => {
     // Handle Firestore Timestamp objects
@@ -110,7 +116,7 @@ export function GeneratedVideosSection() {
             <p className='text-danger mb-4'>{error}</p>
             <Button 
               color='primary' 
-              onClick={() => user?.id && fetchProjectsForDashboard(user.id)}
+              onClick={() => window.location.reload()}
             >
               Retry
             </Button>
@@ -136,7 +142,7 @@ export function GeneratedVideosSection() {
             <Button
               isIconOnly
               variant='light'
-              onClick={() => user?.id && fetchProjectsForDashboard(user.id)}
+              onClick={() => window.location.reload()}
             >
               <RefreshIcon className='w-4 h-4' />
             </Button>
@@ -160,7 +166,11 @@ export function GeneratedVideosSection() {
             <p className='text-default-500 mb-6'>
               Create your first UGC video project to get started
             </p>
-            <Button color='primary' size='lg'>
+            <Button 
+              color='primary' 
+              size='lg'
+              onPress={() => setIsModalOpen(true)}
+            >
               Create First Project
             </Button>
           </div>
@@ -175,7 +185,7 @@ export function GeneratedVideosSection() {
                   {project.status === 'complete' ? (
                     <div className='relative w-full h-full'>
                       <img
-                        src={`/api/projects/${project.id}/thumbnail` || '/images/sample1.png'}
+                        src={'/images/sample1.png'}
                         alt={project.title}
                         className='w-full h-full object-cover rounded-lg'
                       />
@@ -183,6 +193,10 @@ export function GeneratedVideosSection() {
                         isIconOnly
                         size='sm'
                         className='absolute top-2 right-2 bg-black/50 text-white'
+                        onClick={() => {
+                          // TODO: Open video player with final video URL
+                          console.log('Play video for project:', project.id);
+                        }}
                       >
                         <PlayIcon className='w-4 h-4' />
                       </Button>

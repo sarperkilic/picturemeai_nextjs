@@ -18,7 +18,7 @@ export function ImageStep() {
       character: {
         type: 'avatar',
         avatarId: 'example_avatar',
-        imageUrl: undefined,
+        imageUrl: 'https://storage.googleapis.com/falserverless/example_inputs/omnihuman.png',
       },
     });
   };
