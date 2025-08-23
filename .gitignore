@@ -40,10 +40,14 @@ package-lock.json
 bun.lockb
 .env
 
-/app/generated/prisma
 
 # cursor
-.code_review.md
-.create_brief.md
-.plan_feature.md
-.write_docs.md
+code_review.md
+create_brief.md
+plan_feature.md
+write_docs.md
+my_notes.md
+write_docs.md
+future_to_dos.md
+create_brief.md
+code_review.md
