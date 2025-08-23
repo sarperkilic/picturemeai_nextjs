@@ -14,8 +14,8 @@ export function AudioTextStep() {
     setScript(value);
     updateVideoConfig({
       audio: {
-        ...videoConfig.audio,
         text: value,
+        voice: videoConfig.audio.voice,
       },
     });
   };

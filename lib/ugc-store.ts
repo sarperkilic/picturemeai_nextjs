@@ -18,21 +18,12 @@ interface UGCActions {
 }
 
 const initialVideoConfig: VideoConfig = {
-  template: null,
   character: {
     type: 'avatar',
-  },
-  action: {
-    movement: '',
-    duration: 10,
   },
   audio: {
     text: '',
     voice: '',
-    tone: '',
-  },
-  background: {
-    type: 'preset',
   },
 };
 

@@ -7,25 +7,14 @@ export interface VideoTemplate {
 }
 
 export interface VideoConfig {
-  template: VideoTemplate | null;
   character: {
     type: 'avatar' | 'upload';
     imageUrl?: string;
     avatarId?: string;
   };
-  action: {
-    movement: string;
-    duration: number;
-  };
   audio: {
     text: string;
     voice: string;
-    tone: string;
-  };
-  background: {
-    type: 'preset' | 'upload';
-    imageUrl?: string;
-    presetId?: string;
   };
 }
 

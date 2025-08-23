@@ -60,7 +60,7 @@ export function AudioSettingsStep() {
     setSelectedVoice(voiceId);
     updateVideoConfig({
       audio: {
-        ...videoConfig.audio,
+        text: videoConfig.audio.text,
         voice: voiceId,
       },
     });
