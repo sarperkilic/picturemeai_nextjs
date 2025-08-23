@@ -50,47 +50,10 @@ const VOICE_OPTIONS = [
   },
 ];
 
-const TONE_OPTIONS = [
-  {
-    id: 'friendly',
-    name: 'Friendly',
-    description: 'Warm and approachable',
-    icon: '😊',
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Business-like and formal',
-    icon: '💼',
-  },
-  {
-    id: 'energetic',
-    name: 'Energetic',
-    description: 'High energy and enthusiastic',
-    icon: '⚡',
-  },
-  { id: 'calm', name: 'Calm', description: 'Relaxed and soothing', icon: '🌊' },
-  {
-    id: 'confident',
-    name: 'Confident',
-    description: 'Assured and authoritative',
-    icon: '💪',
-  },
-  {
-    id: 'casual',
-    name: 'Casual',
-    description: 'Informal and conversational',
-    icon: '👋',
-  },
-];
-
 export function AudioSettingsStep() {
   const { videoConfig, updateVideoConfig } = useUGCStore();
   const [selectedVoice, setSelectedVoice] = useState<string>(
     videoConfig.audio.voice || ''
-  );
-  const [selectedTone, setSelectedTone] = useState<string>(
-    videoConfig.audio.tone || ''
   );
 
   const handleVoiceChange = (voiceId: string) => {
@@ -103,26 +66,14 @@ export function AudioSettingsStep() {
     });
   };
 
-  const handleToneChange = (toneId: string) => {
-    setSelectedTone(toneId);
-    updateVideoConfig({
-      audio: {
-        ...videoConfig.audio,
-        tone: toneId,
-      },
-    });
-  };
-
   const selectedVoiceData = VOICE_OPTIONS.find(v => v.id === selectedVoice);
-  const selectedToneData = TONE_OPTIONS.find(t => t.id === selectedTone);
 
   return (
     <div className='space-y-6'>
       <div>
-        <h3 className='text-lg font-semibold mb-2'>Choose Voice & Tone</h3>
+        <h3 className='text-lg font-semibold mb-2'>Choose Voice</h3>
         <p className='text-sm text-default-500'>
-          Select the voice that will speak your script and the tone that matches
-          your content.
+          Select the voice that will speak your script.
         </p>
       </div>
 
@@ -169,63 +120,23 @@ export function AudioSettingsStep() {
         </div>
       </div>
 
-      {/* Tone Selection */}
-      <div>
-        <h4 className='font-medium mb-3'>Tone Selection</h4>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
-          {TONE_OPTIONS.map(tone => (
-            <Card
-              key={tone.id}
-              isPressable
-              className={`cursor-pointer transition-all ${
-                selectedTone === tone.id
-                  ? 'ring-2 ring-primary border-primary'
-                  : 'hover:shadow-md'
-              }`}
-              onPress={() => handleToneChange(tone.id)}
-            >
-              <CardBody className='p-3'>
-                <div className='text-center'>
-                  <div className='text-2xl mb-2'>{tone.icon}</div>
-                  <h5 className='font-medium text-sm mb-1'>{tone.name}</h5>
-                  <p className='text-xs text-default-500'>{tone.description}</p>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-      </div>
-
       {/* Selection Summary */}
-      {(selectedVoice || selectedTone) && (
+      {selectedVoice && (
         <Card className='bg-primary/5 border border-primary/20'>
           <CardBody className='p-4'>
-            <h4 className='font-medium mb-2'>Voice & Tone Preview</h4>
-            <div className='grid grid-cols-2 gap-4 text-sm'>
-              {selectedVoiceData && (
-                <div>
-                  <span className='text-default-500'>Voice:</span>
-                  <span className='ml-2 font-medium'>
-                    {selectedVoiceData.name}
-                  </span>
-                  <p className='text-xs text-default-600 mt-1'>
-                    {selectedVoiceData.gender} • {selectedVoiceData.accent} •{' '}
-                    {selectedVoiceData.description}
-                  </p>
-                </div>
-              )}
-              {selectedToneData && (
-                <div>
-                  <span className='text-default-500'>Tone:</span>
-                  <span className='ml-2 font-medium'>
-                    {selectedToneData.name}
-                  </span>
-                  <p className='text-xs text-default-600 mt-1'>
-                    {selectedToneData.description}
-                  </p>
-                </div>
-              )}
-            </div>
+            <h4 className='font-medium mb-2'>Selected Voice</h4>
+            {selectedVoiceData && (
+              <div className='text-sm'>
+                <span className='text-default-500'>Voice:</span>
+                <span className='ml-2 font-medium'>
+                  {selectedVoiceData.name}
+                </span>
+                <p className='text-xs text-default-600 mt-1'>
+                  {selectedVoiceData.gender} • {selectedVoiceData.accent} •{' '}
+                  {selectedVoiceData.description}
+                </p>
+              </div>
+            )}
           </CardBody>
         </Card>
       )}
@@ -233,18 +144,13 @@ export function AudioSettingsStep() {
       {/* Tips */}
       <Card className='bg-default-50 border border-default-200'>
         <CardBody className='p-4'>
-          <h4 className='font-medium mb-2 text-sm'>🎤 Voice & Tone Tips</h4>
+          <h4 className='font-medium mb-2 text-sm'>🎤 Voice Selection Tips</h4>
           <ul className='text-xs text-default-600 space-y-1'>
             <li>• Choose a voice that matches your target audience</li>
-            <li>• Professional tone works well for business content</li>
-            <li>
-              • Friendly tone is great for social media and casual content
-            </li>
-            <li>
-              • Energetic tone is perfect for entertainment and product launches
-            </li>
-            <li>• Consider your brand personality when selecting tone</li>
-            <li>• Test different combinations to find what works best</li>
+            <li>• Professional voices work well for business content</li>
+            <li>• Friendly voices are great for social media and casual content</li>
+            <li>• Consider your brand personality when selecting a voice</li>
+            <li>• Test different voices to find what works best for your content</li>
           </ul>
         </CardBody>
       </Card>

@@ -14,20 +14,14 @@ import { Button } from '@heroui/button';
 import { CheckIcon } from '@/components/icons';
 import { useUGCStore } from '@/lib/ugc-store';
 
-import { TemplateStep } from './ugc-steps/TemplateStep';
 import { ImageStep } from './ugc-steps/ImageStep';
-import { ActionStep } from './ugc-steps/ActionStep';
 import { AudioTextStep } from './ugc-steps/AudioTextStep';
 import { AudioSettingsStep } from './ugc-steps/AudioSettingsStep';
-import { BackgroundStep } from './ugc-steps/BackgroundStep';
 
 const STEPS = [
-  { id: 0, name: 'Template', component: TemplateStep },
-  { id: 1, name: 'Character', component: ImageStep },
-  { id: 2, name: 'Action', component: ActionStep },
-  { id: 3, name: 'Script', component: AudioTextStep },
-  { id: 4, name: 'Voice', component: AudioSettingsStep },
-  { id: 5, name: 'Background', component: BackgroundStep },
+  { id: 0, name: 'Character', component: ImageStep },
+  { id: 1, name: 'Script', component: AudioTextStep },
+  { id: 2, name: 'Voice', component: AudioSettingsStep },
 ];
 
 export function UGCModal() {
@@ -79,22 +73,14 @@ export function UGCModal() {
 
   const isStepCompleted = (stepId: number): boolean => {
     switch (stepId) {
-      case 0: // Template
-        return !!videoConfig.template;
-      case 1: // Character
+      case 0: // Character
         return videoConfig.character.type === 'avatar'
           ? !!videoConfig.character.avatarId
           : !!videoConfig.character.imageUrl;
-      case 2: // Action
-        return !!videoConfig.action.movement && videoConfig.action.duration > 0;
-      case 3: // Script
+      case 1: // Script
         return videoConfig.audio.text.length >= 10;
-      case 4: // Voice
-        return !!videoConfig.audio.voice && !!videoConfig.audio.tone;
-      case 5: // Background
-        return videoConfig.background.type === 'preset'
-          ? !!videoConfig.background.presetId
-          : !!videoConfig.background.imageUrl;
+      case 2: // Voice
+        return !!videoConfig.audio.voice;
       default:
         return false;
     }
@@ -104,8 +90,12 @@ export function UGCModal() {
     return isStepCompleted(currentStep);
   };
 
+  const isAllStepsCompleted = (): boolean => {
+    return STEPS.every((_, index) => isStepCompleted(index));
+  };
+
   const handleGenerate = async () => {
-    if (!isCurrentStepValid()) return;
+    if (!isAllStepsCompleted()) return;
 
     setIsGenerating(true);
     try {
@@ -224,7 +214,7 @@ export function UGCModal() {
               {currentStep === STEPS.length - 1 ? (
                 <Button
                   color='primary'
-                  isDisabled={!isCurrentStepValid()}
+                  isDisabled={!isAllStepsCompleted()}
                   isLoading={isGenerating}
                   onPress={handleGenerate}
                 >

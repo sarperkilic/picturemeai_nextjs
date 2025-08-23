@@ -1,5 +1,7 @@
 following steps to do:
 
+auth sirasinda gozuken icerik duzenlemesi
+
 In firebase authentication page : set 
 3. Set up Email Templates
 Still in the Authentication section:
@@ -16,4 +18,7 @@ sign in olduktan sonra dashboard acces olmuyordu, 2 yontem onerdi, birinciyi yap
 Making the dashboard client-side rendered (easier fix)
 Adding a client-side authentication check that sends the Firebase token to the server
 Let me implement the first approach by making the dashboard client-side rendered:
-
+------
+log out yapinca ana sayfaya yonlendirsin
+------
+credit sisteminde baslangicta 50 ile basliyor
