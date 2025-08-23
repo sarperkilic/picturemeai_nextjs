@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useSession } from '@/lib/use-firebase-auth';
 import { useCreditsStore } from '@/lib/credits-store';
+import { useProjectsStore } from '@/lib/projects-store';
 import { UGCMenuPanel } from '@/components/dashboard/UGCMenuPanel';
 import { GenerationGuide } from '@/components/dashboard/GenerationGuide';
 import { GeneratedVideosSection } from '@/components/dashboard/GeneratedVideosSection';
@@ -15,6 +16,7 @@ export function UGCDashboardClient() {
   const router = useRouter();
   const { user, isLoading } = useSession();
   const { fetchCredits } = useCreditsStore();
+  const { fetchProjectsForDashboard } = useProjectsStore();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -23,12 +25,13 @@ export function UGCDashboardClient() {
     }
   }, [user, isLoading, router]);
 
-  // Load credits on component mount
+  // Load credits and projects on component mount
   useEffect(() => {
     if (user?.id) {
       fetchCredits();
+      fetchProjectsForDashboard(user.id, 10);
     }
-  }, [user?.id, fetchCredits]);
+  }, [user?.id, fetchCredits, fetchProjectsForDashboard]);
 
   // Show loading state while checking authentication
   if (isLoading) {

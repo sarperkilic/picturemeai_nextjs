@@ -55,7 +55,6 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
   const userEmail = user.email;
   const userName = user.name || userEmail?.split('@')[0];
-  const userImage = user.image;
 
   return (
     <Dropdown placement='bottom-end'>
@@ -66,7 +65,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
           className='transition-transform'
           name={userName || undefined}
           size='sm'
-          src={userImage || undefined}
+          src={undefined}
         />
       </DropdownTrigger>
       <DropdownMenu aria-label='Profile Actions' variant='flat'>

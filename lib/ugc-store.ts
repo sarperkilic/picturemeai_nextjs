@@ -6,6 +6,8 @@ import {
   type VideoConfig,
   type GeneratedVideo,
 } from '@/types/ugc';
+import { useProjectsStore } from './projects-store';
+import { Project } from '@/types/firebase';
 
 interface UGCActions {
   setSelectedGenerationMode: (mode: GenerationMode) => void;
@@ -15,6 +17,7 @@ interface UGCActions {
   addGeneratedVideo: (video: GeneratedVideo) => void;
   resetVideoConfig: () => void;
   resetState: () => void;
+  setCurrentProject: (project: Project | null) => void;
 }
 
 const initialVideoConfig: VideoConfig = {
@@ -33,6 +36,7 @@ const initialState: UGCState = {
   currentStep: 0,
   videoConfig: initialVideoConfig,
   generatedVideos: [],
+  currentProject: null,
 };
 
 export const useUGCStore = create<UGCState & UGCActions>((set, _get) => ({
@@ -68,5 +72,9 @@ export const useUGCStore = create<UGCState & UGCActions>((set, _get) => ({
 
   resetState: () => {
     set(initialState);
+  },
+
+  setCurrentProject: (project: Project | null) => {
+    set({ currentProject: project });
   },
 }));

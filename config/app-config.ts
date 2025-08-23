@@ -39,7 +39,6 @@ export const API_CONFIG = {
   // Internal API endpoints
   ENDPOINTS: {
     FAL_PROXY: '/api/fal/proxy',
-    RECORD_GENERATION: '/api/record-generation',
     USER_CREDITS: '/api/user/credits',
     USER_GENERATIONS: '/api/user/generations',
     IYZICO_PAYMENT: '/api/iyzico/create-payment',

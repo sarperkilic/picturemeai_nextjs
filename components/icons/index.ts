@@ -11,3 +11,8 @@ export { GoogleIcon } from './GoogleIcon';
 export { ZoomIcon } from './ZoomIcon';
 export { RefreshIcon } from './RefreshIcon';
 export { CheckIcon } from './CheckIcon';
+export { PlayIcon } from './PlayIcon';
+export { DownloadIcon } from './DownloadIcon';
+export { ShareIcon } from './ShareIcon';
+export { EditIcon } from './EditIcon';
+export { DeleteIcon } from './DeleteIcon';

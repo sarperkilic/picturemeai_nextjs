@@ -22,3 +22,10 @@ Let me implement the first approach by making the dashboard client-side rendered
 log out yapinca ana sayfaya yonlendirsin
 ------
 credit sisteminde baslangicta 50 ile basliyor
+------
+develover console dan email credit vs gozukuyor
+
+Explicitly exclude sensitive data via design
+
+Store secrets outside the users doc, perhaps only in {uid}/settings-private that’s only accessible via callable functions.
+------

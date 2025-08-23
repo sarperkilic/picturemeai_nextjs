@@ -66,7 +66,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │ ├── api/ # API routes
 │ │ ├── auth/ # Authentication endpoints
 │ │ ├── fal/ # FAL.AI proxy
-│ │ ├── record-generation/ # Generation tracking
+
 │ │ ├── stripe/ # Payment processing
 │ │ └── user/ # User data endpoints
 │ ├── auth/ # Authentication pages

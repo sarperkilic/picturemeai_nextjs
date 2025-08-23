@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "lint:fix": "eslint --fix && prettier --write .",
     "migrate-users": "tsx scripts/migrate-users.ts",
-    "migrate-users-client": "tsx scripts/migrate-users-client.ts"
+    "migrate-users-client": "tsx scripts/migrate-users-client.ts",
+    "migrate-projects": "tsx scripts/migrate-projects.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.1",

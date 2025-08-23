@@ -109,11 +109,7 @@ export default function RootLayout({
 
         <GoogleAnalytics gtag='G-742SLK7W01' />
 
-        {/* Feedback Basket Widget built by vlad, if you clone this poject check out feedbackbasket.com :) */}
-        <Script
-          src='https://www.feedbackbasket.com/api/widget/script/cme3q0an50001jm04d6extjp1'
-          strategy='lazyOnload'
-        />
+
       </body>
     </html>
   );

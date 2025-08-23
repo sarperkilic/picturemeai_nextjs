@@ -3,17 +3,28 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/types/firebase';
 
-const firebaseAdminConfig = {
-  credential: cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  }),
+// Configuration that can use either environment variables or service account file
+const getFirebaseAdminConfig = () => {
+  // If GOOGLE_APPLICATION_CREDENTIALS is set, use service account file
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.log('Using Google Application Credentials from file');
+    return {};
+  }
+  
+  // Otherwise, use environment variables
+  console.log('Using Firebase Admin credentials from environment variables');
+  return {
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  };
 };
 
 // Initialize Firebase Admin
 const app =
-  getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
+  getApps().length === 0 ? initializeApp(getFirebaseAdminConfig()) : getApps()[0];
 
 // Initialize Firebase Admin services
 export const adminAuth = getAuth(app);
@@ -59,4 +70,4 @@ export async function getRendersByProvider(provider: string) {
   }
 }
 
-export default app;
+export default app; 

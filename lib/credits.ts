@@ -86,58 +86,7 @@ export async function deductCredits(
   }
 }
 
-export async function recordGeneration({
-  userId,
-  prompt,
-  category,
-  numImages,
-  imageUrls,
-  imageSize,
-  style,
-  renderingSpeed,
-  falRequestId,
-  creditsUsed = 1,
-}: {
-  userId: string;
-  prompt: string;
-  category: string;
-  numImages: number;
-  imageUrls: string[];
-  imageSize: string;
-  style: string;
-  renderingSpeed: string;
-  falRequestId?: string;
-  creditsUsed?: number;
-}) {
-  try {
-    const generationData: Omit<Generation, 'id'> = {
-      userId,
-      prompt,
-      category,
-      numImages,
-      imageUrls,
-      imageSize,
-      style,
-      renderingSpeed,
-      falRequestId,
-      creditsUsed,
-      createdAt: new Date(),
-    };
 
-    const docRef = await addDoc(
-      collection(db, COLLECTIONS.GENERATIONS),
-      generationData
-    );
-
-    return {
-      id: docRef.id,
-      ...generationData,
-    };
-  } catch (error) {
-    console.error('Error recording generation:', error);
-    throw error;
-  }
-}
 
 export async function getUserGenerations(
   userId: string,

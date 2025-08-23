@@ -57,6 +57,34 @@ export interface Generation {
   createdAt: Date;
 }
 
+export interface Project {
+  id: string;
+  title: string;
+  status: "draft" | "ready" | "rendering" | "complete" | "failed";
+  duration: number;
+  flow: {
+    script: string;
+    voiceId: string;
+    avatarId: string;
+  };
+  usedCredits: number;
+  createdAt: any; // Timestamp
+  updatedAt: any; // Timestamp
+}
+
+export interface Render {
+  id: string;
+  kind: "tts" | "avatar" | "final";
+  model: string;
+  providerJobId: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  input: Record<string, any>;
+  output: Record<string, any>;
+  error?: string;
+  createdAt: any; // Timestamp
+  updatedAt: any; // Timestamp
+}
+
 export enum PurchaseStatus {
   PENDING = 'PENDING',
   COMPLETED = 'COMPLETED',
@@ -69,4 +97,6 @@ export const COLLECTIONS = {
   USERS: 'users',
   PURCHASES: 'purchases',
   GENERATIONS: 'generations',
+  PROJECTS: 'projects', // New
+  RENDERS: 'renders',   // New
 } as const;

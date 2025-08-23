@@ -31,10 +31,13 @@ export type GenerationMode =
   | 'Template Library'
   | 'Custom Video';
 
+import { Project } from './firebase';
+
 export interface UGCState {
   selectedGenerationMode: GenerationMode;
   isModalOpen: boolean;
   currentStep: number;
   videoConfig: VideoConfig;
   generatedVideos: GeneratedVideo[];
+  currentProject: Project | null;
 }
