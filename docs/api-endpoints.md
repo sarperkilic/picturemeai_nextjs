@@ -30,6 +30,12 @@ https://your-domain.com/api
 | PUT | `/projects/[projectId]/renders/[renderId]` | Update render | Yes |
 | DELETE | `/projects/[projectId]/renders/[renderId]` | Delete render | Yes |
 | GET | `/analytics/renders` | Get render analytics | Admin only |
+| GET | `/templates` | List avatar templates | Yes |
+| POST | `/templates` | Create new avatar template | Yes |
+| GET | `/templates/avatars` | List avatar templates with filtering | Yes |
+| GET | `/templates/avatars/[avatarId]` | Get specific avatar template | Yes |
+| PUT | `/templates/avatars/[avatarId]` | Update avatar template | Yes |
+| DELETE | `/templates/avatars/[avatarId]` | Delete avatar template | Yes |
 
 ## Project Endpoints
 
@@ -355,6 +361,197 @@ GET /analytics/renders?type=by-provider&provider=elevenlabs
 }
 ```
 
+## Template Endpoints
+
+### GET /templates
+List all avatar templates with filtering and pagination.
+
+**Query Parameters:**
+- `limit` (optional): Number of templates to return (default: 50, max: 100)
+- `offset` (optional): Number of templates to skip (default: 0)
+- `orderBy` (optional): Field to order by (default: "created_at", options: "created_at", "avatar_name")
+- `orderDirection` (optional): Order direction (default: "desc", options: "asc", "desc")
+- `gender` (optional): Filter by gender ("male", "female", "neutral")
+- `category` (optional): Filter by category
+- `is_public` (optional): Filter by public status (true/false)
+- `user_id` (optional): Filter by user ID
+
+**Examples:**
+```
+GET /templates?limit=20&gender=female&is_public=true
+GET /templates?orderBy=avatar_name&orderDirection=asc
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "avatar_123",
+      "avatar_name": "Sarah",
+      "storage_url": "https://storage.googleapis.com/bucket/avatars/sarah.png",
+      "category": "avatar",
+      "gender": "female",
+      "is_public": true,
+      "user_id": null,
+      "file_name": "sarah.png",
+      "file_size": 245760,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+### POST /templates
+Create a new avatar template.
+
+**Request Body:**
+```json
+{
+  "avatar_name": "John",
+  "storage_url": "https://storage.googleapis.com/bucket/avatars/john.png",
+  "category": "avatar",
+  "gender": "male",
+  "is_public": true,
+  "file_name": "john.png",
+  "file_size": 198432
+}
+```
+
+**Required Fields:**
+- `avatar_name`: Name of the avatar
+- `storage_url`: Firebase Storage URL of the avatar image
+- `category`: Category of the avatar (e.g., "avatar")
+- `gender`: Gender of the avatar ("male", "female", "neutral")
+- `file_name`: Original filename
+- `file_size`: File size in bytes
+
+**Optional Fields:**
+- `is_public`: Whether the template is public (default: false)
+- `user_id`: User ID who owns the template (default: current user)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "avatar_456"
+  },
+  "message": "Template created successfully"
+}
+```
+
+### GET /templates/avatars
+List avatar templates with advanced filtering options.
+
+**Query Parameters:**
+- `limit` (optional): Number of templates to return (default: 50)
+- `offset` (optional): Number of templates to skip (default: 0)
+- `orderBy` (optional): Field to order by (default: "created_at")
+- `orderDirection` (optional): Order direction (default: "desc")
+- `gender` (optional): Filter by gender ("male", "female", "neutral")
+- `type` (optional): Type of filtering (default: "public", options: "public", "user", "gender")
+
+**Type Filtering:**
+- `public`: Get all public avatar templates
+- `user`: Get current user's avatar templates
+- `gender`: Get public avatars by gender (requires `gender` parameter)
+
+**Examples:**
+```
+GET /templates/avatars?type=public&limit=10
+GET /templates/avatars?type=user
+GET /templates/avatars?type=gender&gender=female
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "avatar_123",
+      "avatar_name": "Sarah",
+      "storage_url": "https://storage.googleapis.com/bucket/avatars/sarah.png",
+      "category": "avatar",
+      "gender": "female",
+      "is_public": true,
+      "user_id": null,
+      "file_name": "sarah.png",
+      "file_size": 245760,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "count": 1,
+  "type": "public"
+}
+```
+
+### GET /templates/avatars/[avatarId]
+Get details of a specific avatar template.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "avatar_123",
+    "avatar_name": "Sarah",
+    "storage_url": "https://storage.googleapis.com/bucket/avatars/sarah.png",
+    "category": "avatar",
+    "gender": "female",
+    "is_public": true,
+    "user_id": null,
+    "file_name": "sarah.png",
+    "file_size": 245760,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+### PUT /templates/avatars/[avatarId]
+Update an avatar template. Users can only update their own templates.
+
+**Request Body:**
+```json
+{
+  "avatar_name": "Updated Sarah",
+  "category": "professional",
+  "gender": "female",
+  "is_public": false
+}
+```
+
+**Updatable Fields:**
+- `avatar_name`: Name of the avatar
+- `category`: Category of the avatar
+- `gender`: Gender of the avatar ("male", "female", "neutral")
+- `is_public`: Whether the template is public
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Avatar template updated successfully"
+}
+```
+
+### DELETE /templates/avatars/[avatarId]
+Delete an avatar template. Users can only delete their own templates.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Avatar template deleted successfully"
+}
+```
+
 ## Error Responses
 
 All endpoints return consistent error responses:
@@ -371,12 +568,21 @@ All endpoints return consistent error responses:
 {
   "error": "Forbidden"
 }
+{
+  "error": "Forbidden: You can only update your own templates"
+}
+{
+  "error": "Forbidden: You can only delete your own templates"
+}
 ```
 
 **404 Not Found:**
 ```json
 {
   "error": "Project not found"
+}
+{
+  "error": "Avatar template not found"
 }
 ```
 
@@ -387,10 +593,38 @@ All endpoints return consistent error responses:
 }
 ```
 
+**Template-specific 400 errors:**
+```json
+{
+  "error": "Missing required field: avatar_name"
+}
+{
+  "error": "Gender parameter required for gender type"
+}
+```
+
 **500 Internal Server Error:**
 ```json
 {
   "error": "Failed to fetch projects"
+}
+{
+  "error": "Failed to get templates"
+}
+{
+  "error": "Failed to create template"
+}
+{
+  "error": "Failed to get avatar templates"
+}
+{
+  "error": "Failed to get avatar template"
+}
+{
+  "error": "Failed to update avatar template"
+}
+{
+  "error": "Failed to delete avatar template"
 }
 ```
 

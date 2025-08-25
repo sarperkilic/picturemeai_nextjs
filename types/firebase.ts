@@ -99,4 +99,5 @@ export const COLLECTIONS = {
   GENERATIONS: 'generations',
   PROJECTS: 'projects', // New
   RENDERS: 'renders',   // New
+  TEMPLATES: 'templates', // New
 } as const;

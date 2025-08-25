@@ -8,6 +8,9 @@
 # testing
 /coverage
 
+# images 
+/example_avatar_images
+
 # next.js
 /.next/
 /out/

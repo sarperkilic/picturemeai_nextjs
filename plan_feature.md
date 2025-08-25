@@ -15,4 +15,4 @@ If the user's requirements are unclear, especially after researching the relevan
 
 Prioritize being concise and precise. Make the plan as tight as possible without losing any of the critical details from the user's requirements.
 
-Write the plan into an docs/features/_PLAN.md file with the next available feature number (starting with 0001)
+Write the plan into an docs/features/_PLAN.md file with the next available feature number (starting with 0001). Also, in this _PLAN.md file, mention about what is the goal of this plan.
