@@ -70,7 +70,7 @@ export class VideoGenerationService {
         model: 'omnihuman',
         providerJobId: '',
         input: {
-          image_url: 'https://storage.googleapis.com/falserverless/example_inputs/omnihuman.png',
+          image_url: config.imageUrl,
           audio_url: ttsResult.output.audio.url,
         }
       });
@@ -78,11 +78,11 @@ export class VideoGenerationService {
       await updateRenderStatus(userId, project.id, avatarRender.id, 'running');
       
       console.log('Starting OmniHuman generation with:');
-      console.log('- Image URL:', 'https://storage.googleapis.com/falserverless/example_inputs/omnihuman.png');
+      console.log('- Image URL:', config.imageUrl);
       console.log('- Audio URL:', ttsResult.output.audio.url);
       
       const avatarResult = await generateTalkingHead(
-        'https://storage.googleapis.com/falserverless/example_inputs/omnihuman.png',
+        config.imageUrl,
         ttsResult.output.audio.url,
         (log) => onProgress?.(`Avatar: ${log}`)
       );

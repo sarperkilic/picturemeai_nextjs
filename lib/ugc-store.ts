@@ -22,6 +22,8 @@ interface UGCActions {
   setSelectedAvatar: (avatarId: string, imageUrl: string) => void;
   setUploadedAvatar: (imageUrl: string) => void;
   clearAvatarSelection: () => void;
+  // Validation helper
+  validateVideoConfig: () => { isValid: boolean; errors: string[] };
 }
 
 const initialVideoConfig: VideoConfig = {
@@ -117,5 +119,34 @@ export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
         },
       },
     }));
+  },
+
+  // Validation helper
+  validateVideoConfig: () => {
+    const state = get();
+    const { character, audio } = state.videoConfig;
+    
+    const errors: string[] = [];
+    
+    // Validate character selection
+    if (character.type === 'avatar' && !character.avatarId) {
+      errors.push('Please select an avatar');
+    } else if (character.type === 'upload' && !character.imageUrl) {
+      errors.push('Please upload an image');
+    }
+    
+    // Validate audio
+    if (!audio.text || audio.text.length < 10) {
+      errors.push('Script must be at least 10 characters long');
+    }
+    
+    if (!audio.voice) {
+      errors.push('Please select a voice');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   },
 }));

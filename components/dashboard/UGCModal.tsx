@@ -37,6 +37,7 @@ export function UGCModal() {
     setCurrentStep,
     videoConfig,
     resetVideoConfig,
+    validateVideoConfig,
   } = useUGCStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
@@ -101,18 +102,47 @@ export function UGCModal() {
   };
 
   const handleGenerate = async () => {
-    if (!isAllStepsCompleted() || !user?.id) return;
+    if (!user?.id) return;
+
+    // Validate video config before generation
+    const validation = validateVideoConfig();
+    if (!validation.isValid) {
+      setProgressMessage(`Validation Error: ${validation.errors.join(', ')}`);
+      return;
+    }
 
     setIsGenerating(true);
     setProgressMessage('Starting video generation...');
     
     try {
+      // Ensure we have a valid image URL for the video generation
+      let imageUrl = videoConfig.character.imageUrl;
+      
+      // If we have an avatarId but no imageUrl, we need to fetch the avatar template
+      if (videoConfig.character.type === 'avatar' && videoConfig.character.avatarId && !imageUrl) {
+        try {
+          const { getAvatarTemplateById } = await import('@/lib/avatar-selection');
+          const avatarTemplate = await getAvatarTemplateById(videoConfig.character.avatarId);
+          imageUrl = avatarTemplate.storage_url;
+        } catch (error) {
+          console.error('Failed to fetch avatar template:', error);
+          throw new Error('Failed to load selected avatar. Please try again.');
+        }
+      }
+      
+      // Validate that we have an image URL
+      if (!imageUrl) {
+        throw new Error('No image selected for video generation. Please select an avatar or upload an image.');
+      }
+
       const config = {
         script: videoConfig.audio.text,
         voiceId: videoConfig.audio.voice,
         avatarId: videoConfig.character.avatarId || 'default',
-        imageUrl: videoConfig.character.imageUrl || '',
+        imageUrl: imageUrl,
       };
+
+      console.log('Starting video generation with config:', config);
 
       const result = await VideoGenerationService.generateVideoWithErrorHandling(
         user.id,

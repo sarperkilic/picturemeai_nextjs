@@ -16,6 +16,7 @@ export function ImageStep() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
 
   const handleUploadSuccess = (imageUrl: string, avatarName: string) => {
+    console.log('Avatar uploaded:', { imageUrl, avatarName });
     updateVideoConfig({
       character: {
         type: 'upload',
@@ -26,6 +27,7 @@ export function ImageStep() {
   };
 
   const handleAvatarSelect = (avatarId: string, imageUrl: string, avatarName: string) => {
+    console.log('Avatar selected:', { avatarId, imageUrl, avatarName });
     updateVideoConfig({
       character: {
         type: 'avatar',
