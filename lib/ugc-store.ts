@@ -18,6 +18,10 @@ interface UGCActions {
   resetVideoConfig: () => void;
   resetState: () => void;
   setCurrentProject: (project: Project | null) => void;
+  // Avatar selection specific actions
+  setSelectedAvatar: (avatarId: string, imageUrl: string) => void;
+  setUploadedAvatar: (imageUrl: string) => void;
+  clearAvatarSelection: () => void;
 }
 
 const initialVideoConfig: VideoConfig = {
@@ -39,7 +43,7 @@ const initialState: UGCState = {
   currentProject: null,
 };
 
-export const useUGCStore = create<UGCState & UGCActions>((set, _get) => ({
+export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
   ...initialState,
 
   setSelectedGenerationMode: mode => {
@@ -76,5 +80,42 @@ export const useUGCStore = create<UGCState & UGCActions>((set, _get) => ({
 
   setCurrentProject: (project: Project | null) => {
     set({ currentProject: project });
+  },
+
+  // Avatar selection specific actions
+  setSelectedAvatar: (avatarId: string, imageUrl: string) => {
+    set(state => ({
+      videoConfig: {
+        ...state.videoConfig,
+        character: {
+          type: 'avatar',
+          avatarId,
+          imageUrl,
+        },
+      },
+    }));
+  },
+
+  setUploadedAvatar: (imageUrl: string) => {
+    set(state => ({
+      videoConfig: {
+        ...state.videoConfig,
+        character: {
+          type: 'upload',
+          imageUrl,
+        },
+      },
+    }));
+  },
+
+  clearAvatarSelection: () => {
+    set(state => ({
+      videoConfig: {
+        ...state.videoConfig,
+        character: {
+          type: 'avatar',
+        },
+      },
+    }));
   },
 }));

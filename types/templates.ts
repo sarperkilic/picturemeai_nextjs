@@ -12,6 +12,7 @@ export interface AvatarTemplate {
   file_size: number;
   created_at: Timestamp;
   updated_at: Timestamp;
+  upload_source: 'user' | 'system'; // New field
 }
 
 export interface CreateAvatarTemplateData {
@@ -23,6 +24,7 @@ export interface CreateAvatarTemplateData {
   user_id?: string;
   file_name: string;
   file_size: number;
+  upload_source: 'user' | 'system';
 }
 
 export interface UpdateAvatarTemplateData {

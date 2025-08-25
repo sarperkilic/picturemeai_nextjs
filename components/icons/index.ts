@@ -16,3 +16,5 @@ export { DownloadIcon } from './DownloadIcon';
 export { ShareIcon } from './ShareIcon';
 export { EditIcon } from './EditIcon';
 export { DeleteIcon } from './DeleteIcon';
+export { UploadIcon } from './UploadIcon';
+export { UserIcon } from './UserIcon';

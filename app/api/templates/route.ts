@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       user_id: body.user_id || decodedToken.uid, // Default to current user
       file_name: body.file_name,
       file_size: body.file_size,
+      upload_source: body.upload_source || 'user', // Default to user uploads
     };
 
     // Create template

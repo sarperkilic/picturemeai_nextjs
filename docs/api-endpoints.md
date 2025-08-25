@@ -33,6 +33,8 @@ https://your-domain.com/api
 | GET | `/templates` | List avatar templates | Yes |
 | POST | `/templates` | Create new avatar template | Yes |
 | GET | `/templates/avatars` | List avatar templates with filtering | Yes |
+| GET | `/templates/avatars/categories` | Get available avatar categories | Yes |
+| POST | `/templates/avatars/upload` | Upload avatar with file | Yes |
 | GET | `/templates/avatars/[avatarId]` | Get specific avatar template | Yes |
 | PUT | `/templates/avatars/[avatarId]` | Update avatar template | Yes |
 | DELETE | `/templates/avatars/[avatarId]` | Delete avatar template | Yes |
@@ -375,6 +377,7 @@ templates/avatars/avatars/{avatarId}
 ├── user_id: string | null (null for system avatars)
 ├── file_name: string
 ├── file_size: number
+├── upload_source: "user" | "system"
 ├── created_at: Timestamp
 └── updated_at: Timestamp
 ```
@@ -382,12 +385,13 @@ templates/avatars/avatars/{avatarId}
 **Note:** The double "avatars" subcollection structure (`templates/avatars/avatars/{avatarId}`) is the current implementation. This structure allows for future expansion to other template types while keeping avatar templates organized.
 
 ### Implementation Status
-✅ **Fully Implemented and Tested**
+✅ **Phase 2: Enhanced Avatar Selection API Integration - COMPLETED**
 - Database structure: `templates/avatars/avatars/{avatarId}` ✅
-- Upload script creates templates correctly ✅
-- API endpoints work with the structure ✅
-- Library functions access data correctly ✅
-- Firestore rules updated for the structure ✅
+- Enhanced upload API with multipart form data support ✅
+- Avatar categories endpoint ✅
+- User avatar support and ownership ✅
+- Advanced filtering and search ✅
+- File validation and security ✅
 - 4 system avatar templates uploaded and accessible ✅
 
 **Current Templates:**
@@ -430,6 +434,7 @@ GET /templates?orderBy=avatar_name&orderDirection=asc
       "user_id": null,
       "file_name": "sarah.png",
       "file_size": 245760,
+      "upload_source": "system",
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
@@ -450,7 +455,8 @@ Create a new avatar template.
   "gender": "male",
   "is_public": true,
   "file_name": "john.png",
-  "file_size": 198432
+  "file_size": 198432,
+  "upload_source": "user"
 }
 ```
 
@@ -461,6 +467,7 @@ Create a new avatar template.
 - `gender`: Gender of the avatar ("male", "female", "neutral")
 - `file_name`: Original filename
 - `file_size`: File size in bytes
+- `upload_source`: Source of upload ("user" or "system")
 
 **Optional Fields:**
 - `is_public`: Whether the template is public (default: false)
@@ -486,6 +493,8 @@ List avatar templates with advanced filtering options.
 - `orderBy` (optional): Field to order by (default: "created_at")
 - `orderDirection` (optional): Order direction (default: "desc")
 - `gender` (optional): Filter by gender ("male", "female", "neutral")
+- `category` (optional): Filter by category
+- `search` (optional): Search by avatar name or category
 - `type` (optional): Type of filtering (default: "public", options: "public", "user", "gender")
 
 **Type Filtering:**
@@ -498,6 +507,7 @@ List avatar templates with advanced filtering options.
 GET /templates/avatars?type=public&limit=10
 GET /templates/avatars?type=user
 GET /templates/avatars?type=gender&gender=female
+GET /templates/avatars?search=paul&type=public
 ```
 
 **Response:**
@@ -515,12 +525,74 @@ GET /templates/avatars?type=gender&gender=female
       "user_id": null,
       "file_name": "sarah.png",
       "file_size": 245760,
+      "upload_source": "system",
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   ],
   "count": 1,
   "type": "public"
+}
+```
+
+### GET /templates/avatars/categories
+Get available avatar categories.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    "Car Talk",
+    "Casual",
+    "Indoor",
+    "Outdoor",
+    "Podcast",
+    "Professional"
+  ]
+}
+```
+
+### POST /templates/avatars/upload
+Upload avatar with file (multipart form data).
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+- `file` (required): Image file (JPEG, PNG, GIF, max 5MB)
+- `avatar_name` (required): Name of the avatar
+- `gender` (required): "male", "female", or "neutral"
+- `category` (required): Category of the avatar
+
+**File Validation:**
+- Allowed types: JPEG, JPG, PNG, GIF
+- Maximum size: 5MB
+- Minimum dimensions: 200x200 pixels
+- Maximum dimensions: 2000x2000 pixels
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "avatar_123",
+    "storage_url": "https://storage.googleapis.com/bucket/avatars/avatar_name_male_userid_timestamp.png",
+    "avatar_name": "My Avatar"
+  },
+  "message": "Avatar uploaded successfully"
+}
+```
+
+**Alternative JSON Request (for backward compatibility):**
+```json
+{
+  "avatar_name": "John",
+  "storage_url": "https://storage.googleapis.com/bucket/avatars/john.png",
+  "category": "avatar",
+  "gender": "male",
+  "file_name": "john.png",
+  "file_size": 198432,
+  "upload_source": "user"
 }
 ```
 
@@ -541,6 +613,7 @@ Get details of a specific avatar template.
     "user_id": null,
     "file_name": "sarah.png",
     "file_size": 245760,
+    "upload_source": "system",
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z"
   }
@@ -634,6 +707,15 @@ All endpoints return consistent error responses:
 {
   "error": "Gender parameter required for gender type"
 }
+{
+  "error": "Invalid file type. Only JPEG, PNG, and GIF are allowed."
+}
+{
+  "error": "File size too large. Maximum size is 5MB."
+}
+{
+  "error": "Missing required fields: file, avatar_name, gender, category"
+}
 ```
 
 **500 Internal Server Error:**
@@ -659,12 +741,51 @@ All endpoints return consistent error responses:
 {
   "error": "Failed to delete avatar template"
 }
+{
+  "error": "Failed to create avatar template"
+}
 ```
 
 ## Rate Limiting
 - All endpoints are subject to rate limiting
 - Rate limits are applied per user and per endpoint
 - Exceeded rate limits return 429 Too Many Requests
+
+## Security Features
+
+### File Upload Security
+- File type validation (JPEG, PNG, GIF only)
+- File size limits (max 5MB)
+- Secure file naming with timestamps and user IDs
+- User authentication required
+- Proper Firebase Storage permissions
+
+### API Security
+- Firebase ID token authentication
+- User authorization checks
+- Rate limiting support
+- Input validation and sanitization
+- Error handling without information leakage
+
+### Access Control
+- Users can only access public templates and their own
+- System avatars are public by default
+- User uploads are private by default
+- Proper ownership validation
+
+## Performance Optimizations
+
+### Client-Side
+- File validation before upload
+- Efficient filtering and search
+- Pagination for large datasets
+- Caching of frequently accessed data
+
+### Server-Side
+- Efficient Firestore queries
+- Proper indexing support
+- Batch operations for bulk uploads
+- CDN usage for avatar images
 
 ## Known Issues and Troubleshooting
 
@@ -679,6 +800,10 @@ Some queries may require composite indexes in Firestore. If you encounter index 
 - Collection: `templates/avatars/avatars`  
 - Fields: `gender` (Ascending), `is_public` (Ascending), `created_at` (Descending)
 
+**For user filtering with ordering:**
+- Collection: `templates/avatars/avatars`
+- Fields: `user_id` (Ascending), `created_at` (Descending)
+
 ### Authentication Notes
 - API endpoints require Firebase ID tokens (not custom tokens)
 - Use the Firebase client SDK to get proper ID tokens for testing
@@ -686,9 +811,27 @@ Some queries may require composite indexes in Firestore. If you encounter index 
 
 ### Database Structure Notes
 - Templates are stored in `templates/avatars/avatars/{avatarId}` structure
-- System avatars have `user_id: null`
-- User-uploaded avatars will have `user_id: <user_uid>`
+- System avatars have `user_id: null` and `upload_source: "system"`
+- User-uploaded avatars have `user_id: <user_uid>` and `upload_source: "user"`
 - All system avatars are public by default
+
+## Testing
+
+### Test Scripts
+```bash
+# Test Phase 2 avatar integration
+npm run verify-avatar-api
+
+# Test comprehensive avatar functionality
+npm run test-phase2-avatar-integration
+```
+
+### Manual Testing
+1. Test file upload with different file types and sizes
+2. Verify user avatar ownership and access control
+3. Test filtering and search functionality
+4. Verify category endpoint returns correct data
+5. Test error handling for invalid requests
 
 ## Next Steps
 1. Test all API endpoints with Postman or similar tool
@@ -696,4 +839,5 @@ Some queries may require composite indexes in Firestore. If you encounter index 
 3. Test error handling and validation
 4. Implement rate limiting if needed
 5. Add comprehensive logging and monitoring
-6. Create required Firestore indexes for optimal performance 
+6. Create required Firestore indexes for optimal performance
+7. Phase 3: UI Integration with enhanced avatar selection components 

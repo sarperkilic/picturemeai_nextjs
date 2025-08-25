@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { 
   getPublicAvatarTemplates, 
   getUserAvatarTemplates, 
@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     const orderBy = searchParams.get('orderBy') || 'created_at';
     const orderDirection = searchParams.get('orderDirection') || 'desc';
     const gender = searchParams.get('gender') as 'male' | 'female' | 'neutral' | null;
+    const category = searchParams.get('category') as string | null;
+    const search = searchParams.get('search') as string | null;
     const type = searchParams.get('type'); // 'public', 'user', 'gender'
 
     let templates;
@@ -66,6 +68,27 @@ export async function GET(request: NextRequest) {
           orderDirection: orderDirection as 'asc' | 'desc',
         });
         break;
+    }
+
+    // Apply additional client-side filtering for search and category
+    if (search || category) {
+      templates = templates.filter(template => {
+        let matches = true;
+        
+        if (search) {
+          const searchLower = search.toLowerCase();
+          matches = matches && (
+            template.avatar_name.toLowerCase().includes(searchLower) ||
+            template.category.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        if (category) {
+          matches = matches && template.category === category;
+        }
+        
+        return matches;
+      });
     }
 
     return NextResponse.json({
