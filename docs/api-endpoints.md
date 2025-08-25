@@ -363,6 +363,39 @@ GET /analytics/renders?type=by-provider&provider=elevenlabs
 
 ## Template Endpoints
 
+### Database Structure
+The avatar templates are stored in Firestore using the following structure:
+```
+templates/avatars/avatars/{avatarId}
+├── avatar_name: string
+├── storage_url: string
+├── category: string
+├── gender: "male" | "female" | "neutral"
+├── is_public: boolean
+├── user_id: string | null (null for system avatars)
+├── file_name: string
+├── file_size: number
+├── created_at: Timestamp
+└── updated_at: Timestamp
+```
+
+**Note:** The double "avatars" subcollection structure (`templates/avatars/avatars/{avatarId}`) is the current implementation. This structure allows for future expansion to other template types while keeping avatar templates organized.
+
+### Implementation Status
+✅ **Fully Implemented and Tested**
+- Database structure: `templates/avatars/avatars/{avatarId}` ✅
+- Upload script creates templates correctly ✅
+- API endpoints work with the structure ✅
+- Library functions access data correctly ✅
+- Firestore rules updated for the structure ✅
+- 4 system avatar templates uploaded and accessible ✅
+
+**Current Templates:**
+- Paul (male) - System avatar
+- Mark (male) - System avatar  
+- Ashe (female) - System avatar
+- Mayra (female) - System avatar
+
 ### GET /templates
 List all avatar templates with filtering and pagination.
 
@@ -633,9 +666,34 @@ All endpoints return consistent error responses:
 - Rate limits are applied per user and per endpoint
 - Exceeded rate limits return 429 Too Many Requests
 
+## Known Issues and Troubleshooting
+
+### Firestore Index Requirements
+Some queries may require composite indexes in Firestore. If you encounter index errors, create the following indexes in the Firebase Console:
+
+**For ordering queries with filters:**
+- Collection: `templates/avatars/avatars`
+- Fields: `is_public` (Ascending), `avatar_name` (Ascending), `__name__` (Ascending)
+
+**For gender filtering with ordering:**
+- Collection: `templates/avatars/avatars`  
+- Fields: `gender` (Ascending), `is_public` (Ascending), `created_at` (Descending)
+
+### Authentication Notes
+- API endpoints require Firebase ID tokens (not custom tokens)
+- Use the Firebase client SDK to get proper ID tokens for testing
+- Custom tokens will result in 401 Unauthorized errors
+
+### Database Structure Notes
+- Templates are stored in `templates/avatars/avatars/{avatarId}` structure
+- System avatars have `user_id: null`
+- User-uploaded avatars will have `user_id: <user_uid>`
+- All system avatars are public by default
+
 ## Next Steps
 1. Test all API endpoints with Postman or similar tool
 2. Verify authentication and authorization work correctly
 3. Test error handling and validation
 4. Implement rate limiting if needed
-5. Add comprehensive logging and monitoring 
+5. Add comprehensive logging and monitoring
+6. Create required Firestore indexes for optimal performance 

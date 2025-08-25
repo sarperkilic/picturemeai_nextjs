@@ -40,7 +40,7 @@ export async function createAvatarTemplate(
     };
 
     const docRef = await addDoc(
-      collection(db, COLLECTIONS.TEMPLATES, 'avatars'),
+      collection(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars'),
       templateData
     );
 
@@ -56,7 +56,7 @@ export async function createAvatarTemplate(
  */
 export async function getAvatarTemplate(id: string): Promise<AvatarTemplate | null> {
   try {
-    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', id);
+    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars', id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -78,7 +78,7 @@ export async function updateAvatarTemplate(
   data: UpdateAvatarTemplateData
 ): Promise<void> {
   try {
-    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', id);
+    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars', id);
     const updateData = {
       ...data,
       updated_at: Timestamp.now(),
@@ -96,7 +96,7 @@ export async function updateAvatarTemplate(
  */
 export async function deleteAvatarTemplate(id: string): Promise<void> {
   try {
-    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', id);
+    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars', id);
     await deleteDoc(docRef);
   } catch (error) {
     console.error('Error deleting avatar template:', error);
@@ -113,7 +113,7 @@ export async function getAvatarTemplates(
   try {
     const { limit: limitCount = 50, orderBy: orderByField = 'created_at', orderDirection = 'desc', filters } = options;
 
-    const collectionRef = collection(db, COLLECTIONS.TEMPLATES, 'avatars');
+    const collectionRef = collection(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars');
     const constraints: any[] = [];
 
     // Apply filters
@@ -201,7 +201,7 @@ export async function createAvatarTemplatesBatch(
     const now = Timestamp.now();
 
     templates.forEach((template) => {
-      const docRef = doc(collection(db, COLLECTIONS.TEMPLATES, 'avatars'));
+      const docRef = doc(collection(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars'));
       const templateData = {
         ...template,
         user_id: template.user_id || null,
@@ -229,7 +229,7 @@ export async function deleteAvatarTemplatesBatch(ids: string[]): Promise<void> {
     const batch = writeBatch(db);
 
     ids.forEach((id) => {
-      const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', id);
+      const docRef = doc(db, COLLECTIONS.TEMPLATES, 'avatars', 'avatars', id);
       batch.delete(docRef);
     });
 

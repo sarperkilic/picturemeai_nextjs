@@ -146,12 +146,16 @@ async function uploadAvatarImages() {
 
     console.log(`\n📝 Creating ${templateData.length} template records...`);
 
-    // Create template records in batch using Admin SDK
+    // Create template records as individual documents in the avatars subcollection
     const batch = adminDb.batch();
     const templateIds: string[] = [];
 
     templateData.forEach((template) => {
-      const docRef = adminDb.collection(COLLECTIONS.TEMPLATES).doc('avatars').collection('templates').doc();
+      const docRef = adminDb
+        .collection(COLLECTIONS.TEMPLATES)
+        .doc('avatars')
+        .collection('avatars')
+        .doc();
       batch.set(docRef, template);
       templateIds.push(docRef.id);
     });
