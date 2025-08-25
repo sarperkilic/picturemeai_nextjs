@@ -38,6 +38,8 @@ export function UGCModal() {
     videoConfig,
     resetVideoConfig,
     validateVideoConfig,
+    showToast,
+    triggerRefresh,
   } = useUGCStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
@@ -46,6 +48,8 @@ export function UGCModal() {
     setIsModalOpen(false);
     setCurrentStep(0);
     resetVideoConfig();
+    // Trigger refresh of Generated Videos section
+    triggerRefresh();
   };
 
   const handleNext = () => {
@@ -114,66 +118,94 @@ export function UGCModal() {
     setIsGenerating(true);
     setProgressMessage('Starting video generation...');
     
+    // Ensure we have a valid image URL for the video generation
+    let imageUrl = videoConfig.character.imageUrl;
+    
+    // If we have an avatarId but no imageUrl, we need to fetch the avatar template
+    if (videoConfig.character.type === 'avatar' && videoConfig.character.avatarId && !imageUrl) {
+      try {
+        const { getAvatarTemplateById } = await import('@/lib/avatar-selection');
+        const avatarTemplate = await getAvatarTemplateById(videoConfig.character.avatarId);
+        imageUrl = avatarTemplate.storage_url;
+      } catch (error) {
+        console.error('Failed to fetch avatar template:', error);
+        showToast('Failed to load selected avatar. Please try again.', 'error');
+        setIsGenerating(false);
+        return;
+      }
+    }
+    
+    // Validate that we have an image URL
+    if (!imageUrl) {
+      showToast('No image selected for video generation. Please select an avatar or upload an image.', 'error');
+      setIsGenerating(false);
+      return;
+    }
+
+    const config = {
+      script: videoConfig.audio.text,
+      voiceId: videoConfig.audio.voice,
+      avatarId: videoConfig.character.avatarId || 'default',
+      imageUrl: imageUrl,
+    };
+
+    console.log('Starting video generation with config:', config);
+
+    // Create project first, then start generation in background
     try {
-      // Ensure we have a valid image URL for the video generation
-      let imageUrl = videoConfig.character.imageUrl;
-      
-      // If we have an avatarId but no imageUrl, we need to fetch the avatar template
-      if (videoConfig.character.type === 'avatar' && videoConfig.character.avatarId && !imageUrl) {
-        try {
-          const { getAvatarTemplateById } = await import('@/lib/avatar-selection');
-          const avatarTemplate = await getAvatarTemplateById(videoConfig.character.avatarId);
-          imageUrl = avatarTemplate.storage_url;
-        } catch (error) {
-          console.error('Failed to fetch avatar template:', error);
-          throw new Error('Failed to load selected avatar. Please try again.');
-        }
-      }
-      
-      // Validate that we have an image URL
-      if (!imageUrl) {
-        throw new Error('No image selected for video generation. Please select an avatar or upload an image.');
-      }
-
-      const config = {
-        script: videoConfig.audio.text,
-        voiceId: videoConfig.audio.voice,
-        avatarId: videoConfig.character.avatarId || 'default',
-        imageUrl: imageUrl,
+      // Create the project first to ensure it appears in the list
+      const { createProject } = await import('@/lib/projects');
+      const projectData = {
+        title: `UGC Video ${Date.now()}`,
+        flow: {
+          script: config.script,
+          voiceId: config.voiceId,
+          avatarId: config.avatarId,
+        },
+        duration: 0,
       };
+      
+      const project = await createProject(user.id, projectData);
+      console.log('Project created:', project.id);
 
-      console.log('Starting video generation with config:', config);
+      // Close modal after project is created
+      handleClose();
 
-      const result = await VideoGenerationService.generateVideoWithErrorHandling(
+      // Show initial success toast
+      showToast('Video generation started! Check your projects below.', 'success');
+
+      // Refresh projects to show new project
+      await fetchProjectsForDashboard(user.id, 10);
+
+      // Start video generation in background (don't await)
+      VideoGenerationService.generateVideoWithErrorHandling(
         user.id,
         config,
         (message) => {
-          setProgressMessage(message);
+          // Progress messages could be shown in a toast or status bar
+          console.log('Generation progress:', message);
         }
-      );
+      ).then((result) => {
+        console.log('Video generated successfully:', result);
+        // Show success toast
+        showToast('Video generation completed successfully!', 'success');
+        // Refresh projects to show updated status
+        fetchProjectsForDashboard(user.id, 10);
+      }).catch((error) => {
+        console.error('Error generating video:', error);
+        // Show error toast
+        showToast(
+          `Video generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'error'
+        );
+      });
 
-      console.log('Video generated successfully:', result);
-      setProgressMessage('Video generated successfully!');
-
-      // Refresh projects in dashboard
-      await fetchProjectsForDashboard(user.id, 10);
-
-      // Close modal after a brief delay to show success message
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
-      
     } catch (error) {
-      console.error('Error generating video:', error);
-      setProgressMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setProgressMessage('');
-      }, 5000);
-    } finally {
-      setIsGenerating(false);
+      console.error('Error creating project:', error);
+      showToast('Failed to create project. Please try again.', 'error');
     }
+    
+    setIsGenerating(false);
   };
 
   const CurrentStepComponent = STEPS[currentStep].component;

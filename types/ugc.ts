@@ -40,4 +40,10 @@ export interface UGCState {
   videoConfig: VideoConfig;
   generatedVideos: GeneratedVideo[];
   currentProject: Project | null;
+  toast: {
+    message: string;
+    type: 'success' | 'error' | 'info';
+    isVisible: boolean;
+  };
+  refreshTrigger: number;
 }

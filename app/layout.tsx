@@ -8,6 +8,7 @@ import { fontSans } from '@/config/fonts';
 import { ConditionalNavbar } from '@/components/conditional-navbar';
 import { Footer } from '@/components/Footer';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import { ToastNotification } from '@/components/toast-notification';
 
 import { Providers } from './providers';
 
@@ -65,9 +66,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/web-app-manifest-192x192.png',
+    shortcut: '/web-app-manifest-192x192.png',
+    apple: '/web-app-manifest-512x512.png',
   },
   manifest: '/site.webmanifest',
 };
@@ -105,6 +106,7 @@ export default function RootLayout({
             <main className='flex-grow'>{children}</main>
             <Footer />
           </div>
+          <ToastNotification />
         </Providers>
 
         <GoogleAnalytics gtag='G-742SLK7W01' />

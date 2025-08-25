@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
@@ -11,10 +11,14 @@ import { useSession } from '@/lib/use-firebase-auth';
 import { useUGCStore } from '@/lib/ugc-store';
 import { useProjectsRealtime } from '@/lib/use-realtime-updates';
 import { Project } from '@/types/firebase';
+import { getAvatarTemplate } from '@/lib/templates';
+import { AvatarTemplate } from '@/types/templates';
+import { VideoPlayerModal } from './VideoPlayerModal';
 
 export function GeneratedVideosSection() {
   const { user } = useSession();
-  const { setIsModalOpen } = useUGCStore();
+  const { setIsModalOpen, refreshTrigger } = useUGCStore();
+  const { fetchProjectsForDashboard } = useProjectsStore();
   
   // Use real-time updates for projects
   const { 
@@ -24,12 +28,105 @@ export function GeneratedVideosSection() {
     unsubscribe 
   } = useProjectsRealtime(10);
 
+  // Avatar thumbnail state
+  const [avatarThumbnails, setAvatarThumbnails] = useState<Record<string, string>>({});
+  const [thumbnailLoading, setThumbnailLoading] = useState<Record<string, boolean>>({});
+  
+  // Video player state
+  const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
   // Cleanup subscription on unmount
   useEffect(() => {
     return () => {
       unsubscribe();
     };
   }, [unsubscribe]);
+
+  // Manual refresh when UGC modal closes
+  useEffect(() => {
+    if (refreshTrigger > 0 && user?.id) {
+      // Force a refresh by fetching projects again
+      console.log('Refreshing Generated Videos section...');
+      fetchProjectsForDashboard(user.id, 10);
+    }
+  }, [refreshTrigger, user?.id, fetchProjectsForDashboard]);
+
+  // Fetch avatar thumbnails for projects
+  useEffect(() => {
+    const fetchAvatarThumbnails = async () => {
+      if (projects.length === 0) return;
+
+      const thumbnails: Record<string, string> = {};
+      const loading: Record<string, boolean> = {};
+      
+      // Only fetch avatars for projects that don't already have thumbnails
+      const projectsToFetch = projects.filter(project => 
+        project.flow?.avatarId && 
+        !avatarThumbnails[project.id] && 
+        !thumbnailLoading[project.id]
+      );
+      
+      if (projectsToFetch.length === 0) return;
+      
+      // Set loading state for projects with avatarId
+      for (const project of projectsToFetch) {
+        if (project.flow?.avatarId) {
+          loading[project.id] = true;
+        }
+      }
+      setThumbnailLoading(prev => ({ ...prev, ...loading }));
+      
+      // Fetch avatars for each project
+      for (const project of projectsToFetch) {
+        if (project.flow?.avatarId) {
+          try {
+            const avatarTemplate = await getAvatarTemplate(project.flow.avatarId);
+            if (avatarTemplate) {
+              thumbnails[project.id] = avatarTemplate.storage_url;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch avatar for project ${project.id}:`, error);
+            // Keep existing thumbnail or use default
+          } finally {
+            loading[project.id] = false;
+          }
+        }
+      }
+      
+      setAvatarThumbnails(prev => ({ ...prev, ...thumbnails }));
+      setThumbnailLoading(prev => ({ ...prev, ...loading }));
+    };
+
+    fetchAvatarThumbnails();
+  }, [projects]);
+
+  // Helper function to get the best thumbnail for a project
+  const getProjectThumbnail = (project: Project): string => {
+    // If we have an avatar thumbnail, use it
+    if (avatarThumbnails[project.id]) {
+      return avatarThumbnails[project.id];
+    }
+    
+    // If project has no avatarId, use default image
+    if (!project.flow?.avatarId) {
+      return '/images/sample1.png';
+    }
+    
+    // Fallback to default image
+    return '/images/sample1.png';
+  };
+
+  // Video player handlers
+  const handlePlayVideo = (project: Project) => {
+    setSelectedProject(project);
+    setVideoPlayerOpen(true);
+  };
+
+  const handleCloseVideoPlayer = () => {
+    setVideoPlayerOpen(false);
+    setSelectedProject(null);
+  };
 
   const formatDate = (date: any) => {
     // Handle Firestore Timestamp objects
@@ -127,8 +224,9 @@ export function GeneratedVideosSection() {
   }
 
   return (
-    <Card className='bg-content1/60 border border-default-100'>
-      <CardBody className='p-6'>
+    <>
+      <Card className='bg-content1/60 border border-default-100'>
+        <CardBody className='p-6'>
         <div className='flex items-center justify-between mb-6'>
           <div>
             <h2 className='text-2xl font-bold text-foreground'>
@@ -185,7 +283,7 @@ export function GeneratedVideosSection() {
                   {project.status === 'complete' ? (
                     <div className='relative w-full h-full'>
                       <img
-                        src={'/images/sample1.png'}
+                        src={getProjectThumbnail(project)}
                         alt={project.title}
                         className='w-full h-full object-cover rounded-lg'
                       />
@@ -193,20 +291,38 @@ export function GeneratedVideosSection() {
                         isIconOnly
                         size='sm'
                         className='absolute top-2 right-2 bg-black/50 text-white'
-                        onClick={() => {
-                          // TODO: Open video player with final video URL
-                          console.log('Play video for project:', project.id);
-                        }}
+                        onClick={() => handlePlayVideo(project)}
                       >
                         <PlayIcon className='w-4 h-4' />
                       </Button>
                     </div>
                   ) : (
                     <div className='text-center'>
-                      <div className='w-12 h-12 bg-default-200 rounded-full flex items-center justify-center mx-auto mb-2'>
-                        <SearchIcon className='w-6 h-6 text-default-400' />
-                      </div>
-                      <p className='text-sm text-default-500'>No preview</p>
+                      {thumbnailLoading[project.id] ? (
+                        <div className='w-12 h-12 bg-default-200 rounded-full flex items-center justify-center mx-auto mb-2'>
+                          <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
+                        </div>
+                      ) : avatarThumbnails[project.id] ? (
+                        <div className='relative w-full h-full'>
+                          <img
+                            src={avatarThumbnails[project.id]}
+                            alt={project.title}
+                            className='w-full h-full object-cover rounded-lg opacity-50'
+                          />
+                          <div className='absolute inset-0 flex items-center justify-center'>
+                            <div className='w-12 h-12 bg-default-200 rounded-full flex items-center justify-center'>
+                              <SearchIcon className='w-6 h-6 text-default-400' />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className='w-12 h-12 bg-default-200 rounded-full flex items-center justify-center mx-auto mb-2'>
+                          <SearchIcon className='w-6 h-6 text-default-400' />
+                        </div>
+                      )}
+                      <p className='text-sm text-default-500'>
+                        {thumbnailLoading[project.id] ? 'Loading...' : 'Processing...'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -237,7 +353,12 @@ export function GeneratedVideosSection() {
                   <div className='flex gap-1 pt-2'>
                     {project.status === 'complete' && (
                       <>
-                        <Button size='sm' variant='light' isIconOnly>
+                        <Button 
+                          size='sm' 
+                          variant='light' 
+                          isIconOnly
+                          onClick={() => handlePlayVideo(project)}
+                        >
                           <PlayIcon className='w-3 h-3' />
                         </Button>
                         <Button size='sm' variant='light' isIconOnly>
@@ -259,5 +380,13 @@ export function GeneratedVideosSection() {
         )}
       </CardBody>
     </Card>
+
+    {/* Video Player Modal */}
+    <VideoPlayerModal
+      isOpen={videoPlayerOpen}
+      onClose={handleCloseVideoPlayer}
+      project={selectedProject}
+    />
+    </>
   );
 }

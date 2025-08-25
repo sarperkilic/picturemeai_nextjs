@@ -29,6 +29,7 @@ https://your-domain.com/api
 | GET | `/projects/[projectId]/renders/[renderId]` | Get render details | Yes |
 | PUT | `/projects/[projectId]/renders/[renderId]` | Update render | Yes |
 | DELETE | `/projects/[projectId]/renders/[renderId]` | Delete render | Yes |
+| GET | `/projects/[projectId]/video` | Get video URL for completed project | Yes |
 | GET | `/analytics/renders` | Get render analytics | Admin only |
 | GET | `/templates` | List avatar templates | Yes |
 | POST | `/templates` | Create new avatar template | Yes |
@@ -326,6 +327,79 @@ Delete a specific render.
 {
   "success": true,
   "message": "Render deleted successfully"
+}
+```
+
+### GET /projects/[projectId]/video
+Get the video URL for a completed project. This endpoint retrieves the final video URL from the avatar render output.
+
+**Requirements:**
+- Project must be owned by the authenticated user
+- Project status must be "complete"
+- Avatar render must exist and have status "succeeded"
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "videoUrl": "https://v3.fal.media/files/kangaroo/6DYXHYkuVPK1qIMetEpcy_video.mp4",
+    "duration": 3.056313
+  }
+}
+```
+
+**Error Responses:**
+
+**404 Not Found:**
+```json
+{
+  "error": "Project not found"
+}
+```
+
+**400 Bad Request:**
+```json
+{
+  "error": "Video not ready yet"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "Video render not found"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "Video URL not available"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "error": "Failed to fetch video"
+}
+```
+
+**Usage Example:**
+```javascript
+// Get video URL for a completed project
+const response = await fetch(`/api/projects/${projectId}/video`, {
+  headers: {
+    'Authorization': `Bearer ${idToken}`,
+  },
+});
+
+if (response.ok) {
+  const data = await response.json();
+  const videoUrl = data.data.videoUrl;
+  const duration = data.data.duration;
+  // Use videoUrl in video player
 }
 ```
 
@@ -832,6 +906,74 @@ npm run test-phase2-avatar-integration
 3. Test filtering and search functionality
 4. Verify category endpoint returns correct data
 5. Test error handling for invalid requests
+
+## UGC Video Generation Enhancements
+
+### Overview
+The UGC Video Generation feature provides a complete workflow for creating talking head videos with avatar selection, real-time progress tracking, and video playback functionality.
+
+### Feature Components
+
+#### Phase 1: Popup Closure and Real-time Updates
+- **UGC Modal**: Closes immediately when video generation starts
+- **Real-time Updates**: Projects appear in dashboard as they're being processed
+- **Toast Notifications**: Success and error feedback for users
+- **Background Processing**: Video generation continues after modal closes
+
+#### Phase 2: Avatar Thumbnail Integration
+- **Avatar Thumbnails**: Each project displays its own avatar image as thumbnail
+- **Template Integration**: Fetches avatar templates from `/templates/avatars/avatars/{avatarId}`
+- **Smart Loading**: Shows loading states and fallback images
+- **Real-time Updates**: Thumbnails update as projects complete
+
+#### Phase 3: Video Player Implementation
+- **Video Player Modal**: Full-featured video playback with controls
+- **Video API Endpoint**: `/api/projects/{projectId}/video` for video URL retrieval
+- **Download & Share**: Built-in download and sharing functionality
+- **Project Information**: Displays project details and original script
+
+### Database Structure
+```
+users/{userId}/
+├── projects/{projectId}/
+│   ├── title: string
+│   ├── status: "draft" | "ready" | "rendering" | "complete" | "failed"
+│   ├── duration: number
+│   ├── flow: {
+│   │   ├── script: string
+│   │   ├── voiceId: string
+│   │   └── avatarId: string
+│   │   }
+│   ├── usedCredits: number
+│   ├── createdAt: Timestamp
+│   └── updatedAt: Timestamp
+│   └── renders/{renderId}/
+│       ├── kind: "tts" | "avatar"
+│       ├── model: string
+│       ├── status: "queued" | "running" | "succeeded" | "failed"
+│       ├── input: Record<string, any>
+│       ├── output: {
+│       │   ├── audio?: { url: string } (for TTS renders)
+│       │   └── video?: { url: string } (for avatar renders)
+│       │   }
+│       ├── providerJobId: string
+│       ├── createdAt: Timestamp
+│       └── updatedAt: Timestamp
+```
+
+### Video Generation Process
+1. **Project Creation**: Creates project with status "draft"
+2. **TTS Generation**: Creates TTS render and generates audio
+3. **Avatar Generation**: Creates avatar render and generates video
+4. **Project Completion**: Updates project status to "complete"
+5. **Video Playback**: Video URL available via `/api/projects/{projectId}/video`
+
+### Integration Points
+- **UGC Modal**: `components/dashboard/UGCModal.tsx`
+- **Generated Videos Section**: `components/dashboard/GeneratedVideosSection.tsx`
+- **Video Player**: `components/dashboard/VideoPlayerModal.tsx`
+- **Video API**: `app/api/projects/[projectId]/video/route.ts`
+- **Toast Notifications**: `components/toast-notification.tsx`
 
 ## Next Steps
 1. Test all API endpoints with Postman or similar tool

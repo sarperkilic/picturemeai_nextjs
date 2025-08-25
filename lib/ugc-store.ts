@@ -24,6 +24,11 @@ interface UGCActions {
   clearAvatarSelection: () => void;
   // Validation helper
   validateVideoConfig: () => { isValid: boolean; errors: string[] };
+  // Toast notifications
+  showToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  hideToast: () => void;
+  // Refresh trigger for Generated Videos section
+  triggerRefresh: () => void;
 }
 
 const initialVideoConfig: VideoConfig = {
@@ -43,6 +48,12 @@ const initialState: UGCState = {
   videoConfig: initialVideoConfig,
   generatedVideos: [],
   currentProject: null,
+  toast: {
+    message: '',
+    type: 'info',
+    isVisible: false,
+  },
+  refreshTrigger: 0,
 };
 
 export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
@@ -148,5 +159,38 @@ export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
       isValid: errors.length === 0,
       errors
     };
+  },
+
+  // Toast notifications
+  showToast: (message: string, type: 'success' | 'error' | 'info') => {
+    set({
+      toast: {
+        message,
+        type,
+        isVisible: true,
+      },
+    });
+    
+    // Auto-hide toast after 5 seconds
+    setTimeout(() => {
+      get().hideToast();
+    }, 5000);
+  },
+
+  hideToast: () => {
+    set({
+      toast: {
+        message: '',
+        type: 'info',
+        isVisible: false,
+      },
+    });
+  },
+
+  // Refresh trigger for Generated Videos section
+  triggerRefresh: () => {
+    set(state => ({
+      refreshTrigger: state.refreshTrigger + 1,
+    }));
   },
 }));
