@@ -16,6 +16,7 @@ import { useUGCStore } from '@/lib/ugc-store';
 import { VideoGenerationService } from '@/lib/video-generation-service';
 import { useSession } from '@/lib/use-firebase-auth';
 import { useProjectsStore } from '@/lib/projects-store';
+import { FirebaseAuthClient } from '@/lib/firebase-auth';
 
 import { ImageStep } from './ugc-steps/ImageStep';
 import { AudioTextStep } from './ugc-steps/AudioTextStep';
@@ -151,54 +152,39 @@ export function UGCModal() {
 
     console.log('Starting video generation with config:', config);
 
-    // Create project first, then start generation in background
     try {
-      // Create the project first to ensure it appears in the list
-      const { createProject } = await import('@/lib/projects');
-      const projectData = {
-        title: `UGC Video ${Date.now()}`,
-        flow: {
-          script: config.script,
-          voiceId: config.voiceId,
-          avatarId: config.avatarId,
-        },
-        duration: 0,
-      };
-      
-      const project = await createProject(user.id, projectData);
-      console.log('Project created:', project.id);
-
-      // Close modal after project is created
+      // Close modal immediately to provide better UX
       handleClose();
 
       // Show initial success toast
       showToast('Video generation started! Check your projects below.', 'success');
 
-      // Refresh projects to show new project
-      await fetchProjectsForDashboard(user.id, 10);
+      // Start video generation using server-side API
+      const response = await fetch('/api/projects/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await FirebaseAuthClient.getIdToken()}`,
+        },
+        body: JSON.stringify(config),
+      });
 
-      // Start video generation in background (don't await)
-      VideoGenerationService.generateVideoWithErrorHandling(
-        user.id,
-        config,
-        (message) => {
-          // Progress messages could be shown in a toast or status bar
-          console.log('Generation progress:', message);
-        }
-      ).then((result) => {
-        console.log('Video generated successfully:', result);
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('Video generation started successfully:', result.data);
         // Show success toast
-        showToast('Video generation completed successfully!', 'success');
-        // Refresh projects to show updated status
+        showToast('Video generation started successfully!', 'success');
+        // Refresh projects to show new project
         fetchProjectsForDashboard(user.id, 10);
-      }).catch((error) => {
-        console.error('Error generating video:', error);
+      } else {
+        console.error('Error starting video generation:', result.error);
         // Show error toast
         showToast(
-          `Video generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Video generation failed: ${result.error}`,
           'error'
         );
-      });
+      }
 
     } catch (error) {
       console.error('Error creating project:', error);

@@ -77,6 +77,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
 
+  setProjects: (projects: Project[]) => {
+    set({ projects });
+  },
+
   fetchProject: async (userId: string, projectId: string) => {
     set({ isLoading: true, error: null });
     try {

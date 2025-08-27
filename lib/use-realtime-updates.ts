@@ -53,14 +53,15 @@ export function useProjectRealtime(projectId: string) {
  */
 export function useProjectsRealtime(limit: number = 10) {
   const { user } = useSession();
-  const { projects, isLoading, error } = useProjectsStore();
+  const { projects, isLoading, error, setProjects } = useProjectsStore();
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
 
     const unsubscribe = subscribeToUserProjects(user.id, limit, (updatedProjects) => {
-      // The store will be updated automatically
+      // Update the store with real-time data
+      setProjects(updatedProjects);
     });
 
     unsubscribeRef.current = unsubscribe;
@@ -71,7 +72,7 @@ export function useProjectsRealtime(limit: number = 10) {
         unsubscribeRef.current = null;
       }
     };
-  }, [user?.id, limit]);
+  }, [user?.id, limit, setProjects]);
 
   return {
     projects,
