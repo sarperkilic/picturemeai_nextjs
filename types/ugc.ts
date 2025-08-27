@@ -45,5 +45,4 @@ export interface UGCState {
     type: 'success' | 'error' | 'info';
     isVisible: boolean;
   };
-  refreshTrigger: number;
 }

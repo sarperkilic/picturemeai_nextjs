@@ -15,7 +15,7 @@ import { CheckIcon } from '@/components/icons';
 import { useUGCStore } from '@/lib/ugc-store';
 import { VideoGenerationService } from '@/lib/video-generation-service';
 import { useSession } from '@/lib/use-firebase-auth';
-import { useProjectsStore } from '@/lib/projects-store';
+import { refreshVideosList } from '@/lib/hooks/use-videos';
 import { FirebaseAuthClient } from '@/lib/firebase-auth';
 
 import { ImageStep } from './ugc-steps/ImageStep';
@@ -30,7 +30,6 @@ const STEPS = [
 
 export function UGCModal() {
   const { user } = useSession();
-  const { fetchProjectsForDashboard } = useProjectsStore();
   const {
     isModalOpen,
     setIsModalOpen,
@@ -40,7 +39,6 @@ export function UGCModal() {
     resetVideoConfig,
     validateVideoConfig,
     showToast,
-    triggerRefresh,
   } = useUGCStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
@@ -49,8 +47,8 @@ export function UGCModal() {
     setIsModalOpen(false);
     setCurrentStep(0);
     resetVideoConfig();
-    // Trigger refresh of Generated Videos section
-    triggerRefresh();
+    // Trigger SWR refresh of Generated Videos section
+    refreshVideosList();
   };
 
   const handleNext = () => {
@@ -175,8 +173,8 @@ export function UGCModal() {
         console.log('Video generation started successfully:', result.data);
         // Show success toast
         showToast('Video generation started successfully!', 'success');
-        // Refresh projects to show new project
-        fetchProjectsForDashboard(user.id, 10);
+        // Trigger SWR refresh to show new project
+        refreshVideosList();
       } else {
         console.error('Error starting video generation:', result.error);
         // Show error toast

@@ -6,27 +6,37 @@ import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 
 import { RefreshIcon, SearchIcon, PlayIcon, DownloadIcon, ShareIcon } from '@/components/icons';
-import { useProjectsStore } from '@/lib/projects-store';
 import { useSession } from '@/lib/use-firebase-auth';
 import { useUGCStore } from '@/lib/ugc-store';
-import { useProjectsRealtime } from '@/lib/use-realtime-updates';
+import { useVideos } from '@/lib/hooks/use-videos';
 import { Project } from '@/types/firebase';
 import { getAvatarTemplate } from '@/lib/templates';
 import { AvatarTemplate } from '@/types/templates';
 import { VideoPlayerModal } from './VideoPlayerModal';
+import { PerformanceMonitor } from './PerformanceMonitor';
 
 export function GeneratedVideosSection() {
   const { user } = useSession();
-  const { setIsModalOpen, refreshTrigger } = useUGCStore();
-  const { fetchProjectsForDashboard } = useProjectsStore();
+  const { setIsModalOpen } = useUGCStore();
   
-  // Use real-time updates for projects
+  // Use SWR hook for video fetching with Phase 5 enhancements
   const { 
-    projects, 
+    videos, 
     isLoading, 
     error, 
-    unsubscribe 
-  } = useProjectsRealtime(10);
+    refreshVideos, 
+    hasProcessingVideos,
+    totalVideos,
+    processingCount,
+    completedCount,
+    performanceMetrics
+  } = useVideos({ 
+    limit: 10,
+    retryCount: 3,
+    retryInterval: 1000,
+    enablePerformanceMonitoring: true,
+    enableAdvancedCaching: true
+  });
 
   // Avatar thumbnail state
   const [avatarThumbnails, setAvatarThumbnails] = useState<Record<string, string>>({});
@@ -36,49 +46,33 @@ export function GeneratedVideosSection() {
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  // Cleanup subscription on unmount
-  useEffect(() => {
-    return () => {
-      unsubscribe();
-    };
-  }, [unsubscribe]);
-
-  // Manual refresh when UGC modal closes
-  useEffect(() => {
-    if (refreshTrigger > 0 && user?.id) {
-      // Force a refresh by fetching projects again
-      console.log('Refreshing Generated Videos section...');
-      fetchProjectsForDashboard(user.id, 10);
-    }
-  }, [refreshTrigger, user?.id, fetchProjectsForDashboard]);
-
-  // Fetch avatar thumbnails for projects
+  // Fetch avatar thumbnails for videos
   useEffect(() => {
     const fetchAvatarThumbnails = async () => {
-      if (projects.length === 0) return;
+      if (videos.length === 0) return;
 
       const thumbnails: Record<string, string> = {};
       const loading: Record<string, boolean> = {};
       
-      // Only fetch avatars for projects that don't already have thumbnails
-      const projectsToFetch = projects.filter(project => 
+      // Only fetch avatars for videos that don't already have thumbnails
+      const videosToFetch = videos.filter((project: Project) => 
         project.flow?.avatarId && 
         !avatarThumbnails[project.id] && 
         !thumbnailLoading[project.id]
       );
       
-      if (projectsToFetch.length === 0) return;
+      if (videosToFetch.length === 0) return;
       
-      // Set loading state for projects with avatarId
-      for (const project of projectsToFetch) {
+      // Set loading state for videos with avatarId
+      for (const project of videosToFetch) {
         if (project.flow?.avatarId) {
           loading[project.id] = true;
         }
       }
       setThumbnailLoading(prev => ({ ...prev, ...loading }));
       
-      // Fetch avatars for each project
-      for (const project of projectsToFetch) {
+      // Fetch avatars for each video
+      for (const project of videosToFetch) {
         if (project.flow?.avatarId) {
           try {
             const avatarTemplate = await getAvatarTemplate(project.flow.avatarId);
@@ -86,7 +80,7 @@ export function GeneratedVideosSection() {
               thumbnails[project.id] = avatarTemplate.storage_url;
             }
           } catch (error) {
-            console.error(`Failed to fetch avatar for project ${project.id}:`, error);
+            console.error(`Failed to fetch avatar for video ${project.id}:`, error);
             // Keep existing thumbnail or use default
           } finally {
             loading[project.id] = false;
@@ -99,7 +93,7 @@ export function GeneratedVideosSection() {
     };
 
     fetchAvatarThumbnails();
-  }, [projects]);
+  }, [videos]);
 
   // Helper function to get the best thumbnail for a project
   const getProjectThumbnail = (project: Project): string => {
@@ -126,6 +120,16 @@ export function GeneratedVideosSection() {
   const handleCloseVideoPlayer = () => {
     setVideoPlayerOpen(false);
     setSelectedProject(null);
+  };
+
+  // Phase 4: Enhanced refresh handler with error handling
+  const handleRefresh = async () => {
+    try {
+      await refreshVideos();
+    } catch (error) {
+      console.error('Failed to refresh videos:', error);
+      // Could show a toast notification here
+    }
   };
 
   const formatDate = (date: any) => {
@@ -210,10 +214,16 @@ export function GeneratedVideosSection() {
       <Card className='bg-content1/60 border border-default-100'>
         <CardBody className='p-6'>
           <div className='text-center py-8'>
-            <p className='text-danger mb-4'>{error}</p>
+            <p className='text-danger mb-4'>
+              {error.message === 'Authentication expired' 
+                ? 'Your session has expired. Please sign in again.'
+                : error.message || 'Failed to load videos'
+              }
+            </p>
             <Button 
               color='primary' 
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
+              isLoading={isLoading}
             >
               Retry
             </Button>
@@ -234,13 +244,27 @@ export function GeneratedVideosSection() {
             </h2>
             <p className='text-default-500 mt-1'>
               Your UGC video projects and renders
+              {hasProcessingVideos && !isLoading && (
+                <span className='ml-2 inline-flex items-center gap-1 text-primary'>
+                  <div className='w-2 h-2 bg-primary rounded-full animate-pulse'></div>
+                  Auto-refreshing
+                </span>
+              )}
+              {/* Phase 4: Enhanced status display */}
+              {totalVideos > 0 && (
+                <span className='ml-2 text-xs'>
+                  {completedCount} complete, {processingCount} processing
+                </span>
+              )}
             </p>
           </div>
           <div className='flex gap-2'>
             <Button
               isIconOnly
               variant='light'
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
+              isLoading={isLoading}
+              disabled={isLoading}
             >
               <RefreshIcon className='w-4 h-4' />
             </Button>
@@ -250,31 +274,33 @@ export function GeneratedVideosSection() {
             >
               <SearchIcon className='w-4 h-4' />
             </Button>
+            {/* Phase 5: Performance Monitor */}
+            <PerformanceMonitor showDetails={false} />
           </div>
         </div>
 
-        {projects.length === 0 ? (
+        {videos.length === 0 ? (
           <div className='text-center py-12'>
             <div className='w-16 h-16 bg-default-100 rounded-full flex items-center justify-center mx-auto mb-4'>
               <SearchIcon className='w-8 h-8 text-default-400' />
             </div>
             <h3 className='text-lg font-semibold text-foreground mb-2'>
-              No projects yet
+              No videos yet
             </h3>
             <p className='text-default-500 mb-6'>
-              Create your first UGC video project to get started
+              Create your first UGC video to get started
             </p>
             <Button 
               color='primary' 
               size='lg'
               onPress={() => setIsModalOpen(true)}
             >
-              Create First Project
+              Create First Video
             </Button>
           </div>
         ) : (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            {projects.map((project: Project) => (
+            {videos.map((project: Project) => (
               <div
                 key={project.id}
                 className='p-4 rounded-lg border border-default-200 bg-background/50 hover:bg-background/70 transition-colors'

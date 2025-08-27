@@ -5,7 +5,7 @@ import { Card, CardBody } from '@heroui/card';
 import { Chip } from '@heroui/chip';
 import { Button } from '@heroui/button';
 
-import { useActiveRendersRealtime, useProjectRendersRealtime } from '@/lib/use-realtime-updates';
+import { useRenderStatus } from '@/lib/hooks/use-render-status';
 import { Render } from '@/types/firebase';
 
 interface RenderStatusProps {
@@ -14,11 +14,18 @@ interface RenderStatusProps {
 }
 
 export function RenderStatus({ projectId, onComplete }: RenderStatusProps) {
-  const { activeRenders, hasActiveRenders, isLoading } = useActiveRendersRealtime(projectId);
-  const { renders } = useProjectRendersRealtime(projectId);
-  const [progress, setProgress] = useState(0);
+  // Use SWR for render status updates
+  const { renders, isLoading, error, refreshRenderStatus } = useRenderStatus({ projectId });
 
-  // Calculate overall progress based on render statuses
+  // Calculate progress and active renders
+  const totalRenders = renders.length;
+  const completedRenders = renders.filter(render => render.status === 'succeeded').length;
+  const failedRenders = renders.filter(render => render.status === 'failed').length;
+  const activeRenders = renders.filter(render => render.status === 'running' || render.status === 'queued');
+  const hasActiveRenders = activeRenders.length > 0;
+  const progress = totalRenders > 0 ? ((completedRenders + failedRenders) / totalRenders) * 100 : 0;
+
+  // Check if all renders are complete
   useEffect(() => {
     if (renders.length === 0) return;
 
@@ -26,10 +33,6 @@ export function RenderStatus({ projectId, onComplete }: RenderStatusProps) {
     const completedRenders = renders.filter(render => render.status === 'succeeded').length;
     const failedRenders = renders.filter(render => render.status === 'failed').length;
     
-    // Calculate progress percentage
-    const progressPercentage = (completedRenders / totalRenders) * 100;
-    setProgress(progressPercentage);
-
     // Check if all renders are complete
     if (completedRenders + failedRenders === totalRenders) {
       onComplete?.();

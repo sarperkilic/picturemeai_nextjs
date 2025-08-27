@@ -9,8 +9,9 @@ import { UpdateAvatarTemplateData } from '@/types/templates';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { avatarId: string } }
+  context: { params: Promise<{ avatarId: string }> }
 ) {
+  const { avatarId } = await context.params;
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
@@ -20,8 +21,6 @@ export async function GET(
 
     const token = authHeader.substring(7);
     await adminAuth.verifyIdToken(token);
-
-    const { avatarId } = params;
 
     // Get template
     const template = await getAvatarTemplate(avatarId);
@@ -49,8 +48,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { avatarId: string } }
+  context: { params: Promise<{ avatarId: string }> }
 ) {
+  const { avatarId } = await context.params;
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
@@ -60,8 +60,6 @@ export async function PUT(
 
     const token = authHeader.substring(7);
     const decodedToken = await adminAuth.verifyIdToken(token);
-
-    const { avatarId } = params;
 
     // Get existing template to check ownership
     const existingTemplate = await getAvatarTemplate(avatarId);
@@ -110,8 +108,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { avatarId: string } }
+  context: { params: Promise<{ avatarId: string }> }
 ) {
+  const { avatarId } = await context.params;
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization');
@@ -121,8 +120,6 @@ export async function DELETE(
 
     const token = authHeader.substring(7);
     const decodedToken = await adminAuth.verifyIdToken(token);
-
-    const { avatarId } = params;
 
     // Get existing template to check ownership
     const existingTemplate = await getAvatarTemplate(avatarId);

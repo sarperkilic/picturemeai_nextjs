@@ -18,10 +18,17 @@ export async function GET(request: NextRequest) {
 
     const projects = await getUserProjects(userId, limit);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       projects,
     });
+    
+    // User-specific data - disable CDN caching, let SWR handle it
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(

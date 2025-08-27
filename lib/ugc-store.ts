@@ -6,7 +6,6 @@ import {
   type VideoConfig,
   type GeneratedVideo,
 } from '@/types/ugc';
-import { useProjectsStore } from './projects-store';
 import { Project } from '@/types/firebase';
 
 interface UGCActions {
@@ -27,8 +26,6 @@ interface UGCActions {
   // Toast notifications
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
-  // Refresh trigger for Generated Videos section
-  triggerRefresh: () => void;
 }
 
 const initialVideoConfig: VideoConfig = {
@@ -53,7 +50,6 @@ const initialState: UGCState = {
     type: 'info',
     isVisible: false,
   },
-  refreshTrigger: 0,
 };
 
 export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
@@ -187,10 +183,5 @@ export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
     });
   },
 
-  // Refresh trigger for Generated Videos section
-  triggerRefresh: () => {
-    set(state => ({
-      refreshTrigger: state.refreshTrigger + 1,
-    }));
-  },
+
 }));
