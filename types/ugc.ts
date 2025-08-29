@@ -15,6 +15,12 @@ export interface VideoConfig {
   audio: {
     text: string;
     voice: string;
+    voiceSettings?: {
+      stability?: number;
+      similarity_boost?: number;
+      style?: number;
+      speed?: number;
+    };
   };
 }
 

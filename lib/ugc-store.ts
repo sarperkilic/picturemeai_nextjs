@@ -157,6 +157,25 @@ export const useUGCStore = create<UGCState & UGCActions>((set, get) => ({
     };
   },
 
+  // Voice selection helper
+  setSelectedVoice: (voiceId: string, voiceSettings?: {
+    stability?: number;
+    similarity_boost?: number;
+    style?: number;
+    speed?: number;
+  }) => {
+    set(state => ({
+      videoConfig: {
+        ...state.videoConfig,
+        audio: {
+          ...state.videoConfig.audio,
+          voice: voiceId,
+          voiceSettings,
+        },
+      },
+    }));
+  },
+
   // Toast notifications
   showToast: (message: string, type: 'success' | 'error' | 'info') => {
     set({

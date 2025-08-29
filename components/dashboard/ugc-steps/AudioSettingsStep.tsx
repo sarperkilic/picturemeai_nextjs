@@ -2,71 +2,29 @@
 
 import { useState } from 'react';
 import { Card, CardBody } from '@heroui/card';
+import { Button } from '@heroui/button';
 
 import { useUGCStore } from '@/lib/ugc-store';
+import { VoiceLibraryModal } from './VoiceLibraryModal';
+import { VoiceTemplate } from '@/types/voices';
 
-const VOICE_OPTIONS = [
-  {
-    id: '1',
-    name: 'Sarah',
-    gender: 'Female',
-    accent: 'American',
-    description: 'Warm and friendly',
-  },
-  {
-    id: '2',
-    name: 'Michael',
-    gender: 'Male',
-    accent: 'American',
-    description: 'Professional and confident',
-  },
-  {
-    id: '3',
-    name: 'Emma',
-    gender: 'Female',
-    accent: 'British',
-    description: 'Elegant and sophisticated',
-  },
-  {
-    id: '4',
-    name: 'David',
-    gender: 'Male',
-    accent: 'British',
-    description: 'Authoritative and trustworthy',
-  },
-  {
-    id: '5',
-    name: 'Lisa',
-    gender: 'Female',
-    accent: 'Australian',
-    description: 'Casual and approachable',
-  },
-  {
-    id: '6',
-    name: 'James',
-    gender: 'Male',
-    accent: 'Australian',
-    description: 'Relaxed and natural',
-  },
-];
+
 
 export function AudioSettingsStep() {
   const { videoConfig, updateVideoConfig } = useUGCStore();
-  const [selectedVoice, setSelectedVoice] = useState<string>(
-    videoConfig.audio.voice || ''
-  );
+  const [selectedVoice, setSelectedVoice] = useState<VoiceTemplate | null>(null);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
-  const handleVoiceChange = (voiceId: string) => {
-    setSelectedVoice(voiceId);
+  const handleVoiceSelect = (voice: VoiceTemplate) => {
+    setSelectedVoice(voice);
     updateVideoConfig({
       audio: {
         text: videoConfig.audio.text,
-        voice: voiceId,
+        voice: voice.voice_id, // Use ElevenLabs voice_id for generation
+        voiceSettings: voice.settings, // Include voice settings for generation
       },
     });
   };
-
-  const selectedVoiceData = VOICE_OPTIONS.find(v => v.id === selectedVoice);
 
   return (
     <div className='space-y-6'>
@@ -80,66 +38,87 @@ export function AudioSettingsStep() {
       {/* Voice Selection */}
       <div>
         <h4 className='font-medium mb-3'>Voice Selection</h4>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          {VOICE_OPTIONS.map(voice => (
-            <Card
-              key={voice.id}
-              isPressable
-              className={`cursor-pointer transition-all ${
-                selectedVoice === voice.id
-                  ? 'ring-2 ring-primary border-primary'
-                  : 'hover:shadow-md'
-              }`}
-              onPress={() => handleVoiceChange(voice.id)}
-            >
-              <CardBody className='p-4'>
-                <div className='flex items-start gap-3'>
-                  <div className='w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center'>
-                    <span className='text-lg font-semibold text-primary'>
-                      {voice.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className='flex-1'>
-                    <h5 className='font-medium text-sm mb-1'>{voice.name}</h5>
-                    <div className='flex flex-wrap gap-1 mb-1'>
-                      <span className='px-2 py-1 bg-default-100 text-xs rounded-full'>
-                        {voice.gender}
-                      </span>
-                      <span className='px-2 py-1 bg-default-100 text-xs rounded-full'>
-                        {voice.accent}
-                      </span>
-                    </div>
-                    <p className='text-xs text-default-500'>
-                      {voice.description}
-                    </p>
-                  </div>
+        
+        {selectedVoice ? (
+          <Card className="mb-4">
+            <CardBody className='p-4'>
+              <div className='flex items-start gap-3'>
+                <div className='w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center'>
+                  <span className='text-lg font-semibold text-primary'>
+                    {selectedVoice.name.charAt(0)}
+                  </span>
                 </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+                <div className='flex-1'>
+                  <h5 className='font-medium text-sm mb-1'>{selectedVoice.name}</h5>
+                  <div className='flex flex-wrap gap-1 mb-1'>
+                    {selectedVoice.age_group && (
+                      <span className='px-2 py-1 bg-default-100 text-xs rounded-full'>
+                        {selectedVoice.age_group}
+                      </span>
+                    )}
+                    {selectedVoice.gender && (
+                      <span className='px-2 py-1 bg-default-100 text-xs rounded-full'>
+                        {selectedVoice.gender}
+                      </span>
+                    )}
+                    {selectedVoice.accent && (
+                      <span className='px-2 py-1 bg-default-100 text-xs rounded-full'>
+                        {selectedVoice.accent}
+                      </span>
+                    )}
+                  </div>
+                  {selectedVoice.description && (
+                    <p className='text-xs text-default-500'>
+                      {selectedVoice.description}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  onPress={() => {
+                    setSelectedVoice(null);
+                    updateVideoConfig({
+                      audio: {
+                        text: videoConfig.audio.text,
+                        voice: '',
+                      },
+                    });
+                  }}
+                >
+                  Change
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="text-center py-8 border-2 border-dashed border-default-200 rounded-lg">
+            <p className="text-default-500 mb-4">No voice selected</p>
+            <Button
+              color="primary"
+              onPress={() => setIsVoiceModalOpen(true)}
+            >
+              Browse Voices
+            </Button>
+          </div>
+        )}
+
+        <Button
+          color="primary"
+          variant="flat"
+          onPress={() => setIsVoiceModalOpen(true)}
+        >
+          {selectedVoice ? 'Change Voice' : 'Select Voice'}
+        </Button>
       </div>
 
-      {/* Selection Summary */}
-      {selectedVoice && (
-        <Card className='bg-primary/5 border border-primary/20'>
-          <CardBody className='p-4'>
-            <h4 className='font-medium mb-2'>Selected Voice</h4>
-            {selectedVoiceData && (
-              <div className='text-sm'>
-                <span className='text-default-500'>Voice:</span>
-                <span className='ml-2 font-medium'>
-                  {selectedVoiceData.name}
-                </span>
-                <p className='text-xs text-default-600 mt-1'>
-                  {selectedVoiceData.gender} • {selectedVoiceData.accent} •{' '}
-                  {selectedVoiceData.description}
-                </p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      )}
+      {/* Voice Library Modal */}
+      <VoiceLibraryModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onSelect={handleVoiceSelect}
+      />
 
       {/* Tips */}
       <Card className='bg-default-50 border border-default-200'>

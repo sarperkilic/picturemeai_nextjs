@@ -6,6 +6,12 @@ import { CreateProjectData } from '@/types/projects';
 export interface VideoGenerationConfig {
   script: string;
   voiceId: string;
+  voiceSettings?: {
+    stability?: number;
+    similarity_boost?: number;
+    style?: number;
+    speed?: number;
+  };
   avatarId: string;
   imageUrl: string;
 }
@@ -54,6 +60,10 @@ export class VideoGenerationService {
       await updateRenderStatus(userId, project.id, ttsRender.id, 'running');
       
       const ttsResult = await generateTTS(config.script, {
+        voice: config.voiceId,
+        stability: config.voiceSettings?.stability,
+        similarity_boost: config.voiceSettings?.similarity_boost,
+        speed: config.voiceSettings?.speed,
         onProgress: (log) => onProgress?.(`TTS: ${log}`)
       }); 
       
@@ -157,6 +167,10 @@ export class VideoGenerationService {
       await updateRenderStatus(userId, project.id, ttsRender.id, 'running');
       
       const ttsResult = await generateTTS(config.script, {
+        voice: config.voiceId,
+        stability: config.voiceSettings?.stability,
+        similarity_boost: config.voiceSettings?.similarity_boost,
+        speed: config.voiceSettings?.speed,
         onProgress: (log) => onProgress?.(`TTS: ${log}`)
       });
       

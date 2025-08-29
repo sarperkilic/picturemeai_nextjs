@@ -12,7 +12,15 @@
     "format:check": "prettier --check .",
     "lint:fix": "eslint --fix && prettier --write .",
     "migrate-projects": "tsx scripts/migrate-projects.ts",
-    "upload-avatars-admin": "tsx scripts/upload-avatars-admin.ts"
+    "upload-avatars-admin": "tsx scripts/upload-avatars-admin.ts",
+    "populate-voice-categories": "tsx scripts/populate-voice-categories.ts",
+    "populate-voices": "ELEVENLABS_API_KEY=$(grep ELEVENLABS_API_KEY .env.local | cut -d '=' -f2) tsx scripts/populate-voices.ts",
+    "setup-voice-library": "npm run populate-voice-categories && npm run populate-voices",
+    "test-voice-library": "tsx scripts/test-voice-library-integration.ts",
+    "test-video-generation": "tsx scripts/test-video-generation-integration.ts",
+    "test-voice-integration": "npm run test-voice-library && npm run test-video-generation",
+    "test-voice-phase4": "tsx scripts/test-voice-library-phase4.ts",
+    "test-voice-all": "npm run test-voice-library && npm run test-video-generation && npm run test-voice-phase4"
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.1",

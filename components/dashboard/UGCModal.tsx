@@ -144,6 +144,7 @@ export function UGCModal() {
     const config = {
       script: videoConfig.audio.text,
       voiceId: videoConfig.audio.voice,
+      voiceSettings: videoConfig.audio.voiceSettings,
       avatarId: videoConfig.character.avatarId || 'default',
       imageUrl: imageUrl,
     };

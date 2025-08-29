@@ -12,6 +12,7 @@ export { ZoomIcon } from './ZoomIcon';
 export { RefreshIcon } from './RefreshIcon';
 export { CheckIcon } from './CheckIcon';
 export { PlayIcon } from './PlayIcon';
+export { PauseIcon } from './PauseIcon';
 export { DownloadIcon } from './DownloadIcon';
 export { ShareIcon } from './ShareIcon';
 export { EditIcon } from './EditIcon';
